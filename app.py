@@ -75,7 +75,7 @@ from ui.map_renderer import (
 )
 from ui.export import export_advisory_csv, generate_pdf_report, export_all_geotiffs_zip
 from ui.components import load_custom_css, render_hero_banner, render_step_indicator, render_farmer_alert, render_loading_screen, render_how_it_works
-from translations import translate
+from translations import translate, translate_crop
 
 try:
     from streamlit_folium import st_folium
@@ -586,7 +586,11 @@ def render_advisory_summary_table(crop_summary: List[Dict[str, Any]]) -> None:
     display_df.columns = ["Crop", "Area (ha)", "Deficit (mm)", "Stress (0-100)", "Advisory"]
     display_df["Crop"] = display_df["Crop"].str.capitalize()
     
-    styled = display_df.style.applymap(color_advisory, subset=["Advisory"])
+    try:
+        styled = display_df.style.map(color_advisory, subset=["Advisory"])
+    except AttributeError:
+        # Fallback for older pandas versions
+        styled = display_df.style.applymap(color_advisory, subset=["Advisory"])
     st.dataframe(styled, use_container_width=True, height=200)
 
 
@@ -1046,6 +1050,7 @@ def _run_analysis(params: Dict[str, Any], gee_status: Dict[str, Any]) -> None:
     completed_steps = []
     results = None
     import time
+    progress_bar = st.progress(0.0, text="Starting analysis...")
     
     try:
         n = len(steps)
@@ -1056,6 +1061,9 @@ def _run_analysis(params: Dict[str, Any], gee_status: Dict[str, Any]) -> None:
             translated_step = translate(step_key, lang)
             completed_steps.append((translated_step, True))
             
+            # Update progress bar
+            progress_bar.progress((i + 1) / n * 0.3, text=f"{'Processing' if lang == 'en' else 'प्रक्रिया'}: {translated_step}")
+            
             with progress_placeholder.container():
                 render_loading_screen(lang, fact_txt)
                 
@@ -1065,11 +1073,12 @@ def _run_analysis(params: Dict[str, Any], gee_status: Dict[str, Any]) -> None:
                 st.markdown("</div>", unsafe_allow_html=True)
                 
             time.sleep(0.4)
+
         
         # Generate results (live GEE or demo mode)
+        progress_bar.progress(0.3, text="📡 Fetching satellite data...")
         if gee_status["gee_initialized"]:
-            with status_cols[1]:
-                st.info("📡 Ingesting live GEE datasets... (This takes 1-2 minutes for remote sensing arrays)")
+            st.info("📡 Ingesting live GEE datasets... (This takes 1-2 minutes for remote sensing arrays)")
             
             # ── HELPER FUNCTIONS FOR MACHINE LEARNING TRAINING ──
             def generate_reference_profile(crop_data: dict, n_ts: int) -> np.ndarray:
@@ -1432,14 +1441,15 @@ def _run_analysis(params: Dict[str, Any], gee_status: Dict[str, Any]) -> None:
             
             results["crop_map"] = crop_map
             results["ndvi_current"] = ndvi_curr
-            results["stress_class"] = results["stress_stress_class"]
-            results["vhi"] = results["stress_vhi"]
-            results["cwsi"] = results["stress_cwsi"]
-            results["vci"] = results["stress_vci"]
-            results["tci"] = results["stress_tci"]
-            results["smi_sar"] = results["stress_smi_sar"]
-            results["combined_score"] = results["stress_combined_score"]
-            results["weighted_stress"] = results["stress_weighted_stress"]
+            # Safely extract stress keys (handle both naming conventions)
+            results["stress_class"] = results.get("stress_stress_class", results.get("stress_class"))
+            results["vhi"] = results.get("stress_vhi", results.get("vhi"))
+            results["cwsi"] = results.get("stress_cwsi", results.get("cwsi"))
+            results["vci"] = results.get("stress_vci", results.get("vci"))
+            results["tci"] = results.get("stress_tci", results.get("tci"))
+            results["smi_sar"] = results.get("stress_smi_sar", results.get("smi_sar"))
+            results["combined_score"] = results.get("stress_combined_score", results.get("combined_score"))
+            results["weighted_stress"] = results.get("stress_weighted_stress", results.get("weighted_stress"))
             
             results["ndvi_series"] = ndvi_series
             results["ndvi_smooth_series"] = ndvi_smooth_3d
@@ -1457,6 +1467,7 @@ def _run_analysis(params: Dict[str, Any], gee_status: Dict[str, Any]) -> None:
         
         results["params"] = params
         progress_bar.progress(1.0, text="✅ Analysis complete!")
+        progress_placeholder.empty()
         
         st.session_state["results"] = results
         st.success("🎉 Analysis complete! Scroll down to view results.")

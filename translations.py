@@ -554,6 +554,38 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
     "sensitivity_late": {"en": "Alert Late (Severe)", "hi": "देर से बताएं (गंभीर कमी पर)"},
 }
 
+# ── Crop Name Translations ────────────────────────────────────────────────────
+CROP_TRANSLATIONS: Dict[str, Dict[str, str]] = {
+    "wheat":        {"en": "Wheat",        "hi": "गेहूं"},
+    "rice":         {"en": "Rice",         "hi": "धान (चावल)"},
+    "cotton":       {"en": "Cotton",       "hi": "कपास"},
+    "maize":        {"en": "Maize",        "hi": "मक्का"},
+    "soybean":      {"en": "Soybean",      "hi": "सोयाबीन"},
+    "sugarcane":    {"en": "Sugarcane",    "hi": "गन्ना"},
+    "groundnut":    {"en": "Groundnut",    "hi": "मूंगफली"},
+    "mustard":      {"en": "Mustard",      "hi": "सरसों"},
+    "sunflower":    {"en": "Sunflower",    "hi": "सूरजमुखी"},
+    "sorghum":      {"en": "Sorghum",      "hi": "ज्वार"},
+    "pearl_millet": {"en": "Pearl Millet", "hi": "बाजरा"},
+    "chickpea":     {"en": "Chickpea",     "hi": "चना"},
+    "lentil":       {"en": "Lentil",       "hi": "मसूर दाल"},
+    "barley":       {"en": "Barley",       "hi": "जौ"},
+    "watermelon":   {"en": "Watermelon",   "hi": "तरबूज"},
+    "cucumber":     {"en": "Cucumber",     "hi": "खीरा"},
+    "mungbean":     {"en": "Mung Bean",    "hi": "मूंग"},
+    "other":        {"en": "Other",        "hi": "अन्य"},
+    "uncertain":    {"en": "Uncertain",    "hi": "अज्ञात"},
+}
+
+
 def translate(key: str, lang: str = "hi") -> str:
     """Return the translated string for a given key. Defaults to Hindi if missing."""
     return TRANSLATIONS.get(key, {}).get(lang, key)
+
+
+def translate_crop(crop: str, lang: str = "hi") -> str:
+    """Return the translated crop name for a given crop key.
+
+    Falls back to the crop key itself if not found in CROP_TRANSLATIONS.
+    """
+    return CROP_TRANSLATIONS.get(crop.lower(), {}).get(lang, crop)
