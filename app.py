@@ -1259,6 +1259,17 @@ def _run_analysis(params: Dict[str, Any], gee_status: Dict[str, Any]) -> None:
                 period_days=8
             )
             
+            results["crop_map"] = crop_map
+            results["ndvi_current"] = ndvi_curr
+            results["stress_class"] = results["stress_stress_class"]
+            results["vhi"] = results["stress_vhi"]
+            results["cwsi"] = results["stress_cwsi"]
+            results["vci"] = results["stress_vci"]
+            results["tci"] = results["stress_tci"]
+            results["smi_sar"] = results["stress_smi_sar"]
+            results["combined_score"] = results["stress_combined_score"]
+            results["weighted_stress"] = results["stress_weighted_stress"]
+            
             results["ndvi_series"] = ndvi_series
             results["ndvi_smooth_series"] = ndvi_smooth_3d
             results["dates"] = dates
