@@ -129,14 +129,22 @@ class AgroSenseClassifier:
             cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
             scores = []
             for train_idx, val_idx in cv.split(X_train, y_train):
-                model = xgb.XGBClassifier(**params)
-                model.fit(
-                    X_train[train_idx], y_train[train_idx],
-                    sample_weight=sample_weights[train_idx],
-                )
-                preds = model.predict(X_train[val_idx])
-                scores.append(f1_score(y_train[val_idx], preds, average="weighted"))
-            return float(np.mean(scores))
+                try:
+                    # Verify that the split contains all unique classes
+                    if len(np.unique(y_train[train_idx])) < len(np.unique(y_train)):
+                        scores.append(0.0)
+                        continue
+                    model = xgb.XGBClassifier(**params)
+                    model.fit(
+                        X_train[train_idx], y_train[train_idx],
+                        sample_weight=sample_weights[train_idx],
+                    )
+                    preds = model.predict(X_train[val_idx])
+                    scores.append(f1_score(y_train[val_idx], preds, average="weighted"))
+                except Exception as exc:
+                    logger.warning("XGBoost cross-validation fold failed: %s", exc)
+                    scores.append(0.0)
+            return float(np.mean(scores)) if scores else 0.0
 
         study = optuna.create_study(direction="maximize")
         study.optimize(objective, n_trials=n_trials, show_progress_bar=False)
@@ -171,11 +179,18 @@ class AgroSenseClassifier:
             cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
             scores = []
             for train_idx, val_idx in cv.split(X_train, y_train):
-                model = lgb.LGBMClassifier(**params)
-                model.fit(X_train[train_idx], y_train[train_idx])
-                preds = model.predict(X_train[val_idx])
-                scores.append(f1_score(y_train[val_idx], preds, average="weighted"))
-            return float(np.mean(scores))
+                try:
+                    if len(np.unique(y_train[train_idx])) < len(np.unique(y_train)):
+                        scores.append(0.0)
+                        continue
+                    model = lgb.LGBMClassifier(**params)
+                    model.fit(X_train[train_idx], y_train[train_idx])
+                    preds = model.predict(X_train[val_idx])
+                    scores.append(f1_score(y_train[val_idx], preds, average="weighted"))
+                except Exception as exc:
+                    logger.warning("LightGBM cross-validation fold failed: %s", exc)
+                    scores.append(0.0)
+            return float(np.mean(scores)) if scores else 0.0
 
         study = optuna.create_study(direction="maximize")
         study.optimize(objective, n_trials=n_trials, show_progress_bar=False)
@@ -211,6 +226,21 @@ class AgroSenseClassifier:
         self.classes_ = list(self.label_encoder.classes_)
         n_classes = len(self.classes_)
         self.feature_names = feature_names or [f"f{i}" for i in range(X.shape[1])]
+
+        # Ensure all classes have at least 3 samples by oversampling rare classes (crucial for StratifiedKFold splits)
+        unique_classes, counts = np.unique(y_enc, return_counts=True)
+        X_oversampled = [X]
+        y_oversampled = [y_enc]
+        for cls, count in zip(unique_classes, counts):
+            if count < 3:
+                needed = 3 - count
+                cls_indices = np.where(y_enc == cls)[0]
+                replicated_indices = np.random.choice(cls_indices, needed, replace=True)
+                X_oversampled.append(X[replicated_indices])
+                y_oversampled.append(y_enc[replicated_indices])
+        
+        X = np.concatenate(X_oversampled, axis=0)
+        y_enc = np.concatenate(y_oversampled, axis=0)
 
         # Check minimum samples
         class_counts = {cls: int(np.sum(y == cls)) for cls in self.classes_}
