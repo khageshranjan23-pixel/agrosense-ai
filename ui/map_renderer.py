@@ -14,6 +14,8 @@ import numpy as np
 import folium
 from folium import plugins
 from folium.plugins import MeasureControl, MiniMap, MousePosition, Draw, LocateControl
+import streamlit as st
+from translations import translate
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +24,24 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from config import CROP_COLORS, STRESS_COLORS, IRRIGATION_COLORS
+
+def translate_crop(crop_name: str, lang: str) -> str:
+    """Helper to translate crop names to Hindi/English."""
+    crop_map = {
+        "wheat": {"en": "Wheat", "hi": "गेहूं (Wheat)"},
+        "rice": {"en": "Rice", "hi": "धान (Rice)"},
+        "cotton": {"en": "Cotton", "hi": "कपास (Cotton)"},
+        "mustard": {"en": "Mustard", "hi": "सरसों (Mustard)"},
+        "sugarcane": {"en": "Sugarcane", "hi": "गन्ना (Sugarcane)"},
+        "maize": {"en": "Maize", "hi": "मक्का (Maize)"},
+        "soybean": {"en": "Soybean", "hi": "सोयाबीन (Soybean)"},
+        "chickpea": {"en": "Chickpea", "hi": "चना (Chickpea)"},
+        "groundnut": {"en": "Groundnut", "hi": "मूंगफली (Groundnut)"},
+    }
+    key = crop_name.lower().strip()
+    if key in crop_map:
+        return crop_map[key][lang]
+    return crop_name.capitalize()
 
 
 # ---------------------------------------------------------------------------
@@ -220,22 +240,9 @@ def add_crop_type_layer(
     bounds: List[List[float]],
     crop_classes: List[str],
 ) -> folium.Map:
-    """Add a discrete crop-type classification overlay to the map.
-
-    Each unique integer code in *crop_map* (0, 1, ... N-1) is assigned the
-    colour defined in config.CROP_COLORS for the corresponding class
-    name in *crop_classes*.  An HTML legend is injected into the map.
-
-    Args:
-        m: Target folium map.
-        crop_map: 2-D integer array (H, W) with class indices [0, N).
-        bounds: [[south, west], [north, east]].
-        crop_classes: Ordered list of class names matching index 0..N-1.
-
-    Returns:
-        The updated map with the crop-type overlay and legend appended.
-    """
+    """Add a discrete crop-type classification overlay to the map."""
     import matplotlib.colors as mcolors
+    lang = st.session_state.get("lang", "en")
 
     n_classes = len(crop_classes)
     if n_classes == 0:
@@ -247,7 +254,6 @@ def add_crop_type_layer(
         for cls in crop_classes
     ]
 
-    # Pre-convert to RGBA once so the closure is O(N) not O(H*W*N)
     rgba_table = np.array(
         [mcolors.to_rgba(c) for c in colors_list], dtype=np.float64
     )  # (N, 4)
@@ -255,19 +261,22 @@ def add_crop_type_layer(
     def colormap_fn(normalized: np.ndarray) -> np.ndarray:
         indices = np.round(normalized * (n_classes - 1)).astype(int)
         indices = np.clip(indices, 0, n_classes - 1)
-        return rgba_table[indices]  # vectorised index -> (H, W, 4)
+        return rgba_table[indices]
 
     overlay = array_to_image_overlay(
         crop_map.astype(np.float64),
         bounds,
         colormap_fn,
-        name="Crop Types",
+        name="Crop Types" if lang == "en" else "फसल के प्रकार",
         opacity=0.75,
     )
     overlay.add_to(m)
 
+    translated_classes = [translate_crop(cls, lang) for cls in crop_classes]
     legend_html = _build_legend_html(
-        "Crop Types", list(zip(crop_classes, colors_list)), left_offset="10px"
+        translate("layer_crop", lang),
+        list(zip(translated_classes, colors_list)),
+        left_offset="10px"
     )
     m.get_root().html.add_child(folium.Element(legend_html))
 
@@ -280,20 +289,9 @@ def add_stress_layer(
     stress_class: np.ndarray,
     bounds: List[List[float]],
 ) -> folium.Map:
-    """Add a 4-class moisture-stress classification overlay to the map.
-
-    Stress codes 0-3 map to: No Stress, Mild, Moderate, Severe.
-    Colours are read from config.STRESS_COLORS.
-
-    Args:
-        m: Target folium map.
-        stress_class: 2-D integer array (H, W) with values 0-3.
-        bounds: [[south, west], [north, east]].
-
-    Returns:
-        The updated map with the stress overlay and legend appended.
-    """
+    """Add a 4-class moisture-stress classification overlay to the map."""
     import matplotlib.colors as mcolors
+    lang = st.session_state.get("lang", "en")
 
     stress_color_values: List[str] = [
         STRESS_COLORS["no_stress"],
@@ -301,7 +299,13 @@ def add_stress_layer(
         STRESS_COLORS["moderate_stress"],
         STRESS_COLORS["severe_stress"],
     ]
-    stress_labels = ["No Stress", "Mild Stress", "Moderate Stress", "Severe Stress"]
+    
+    stress_labels = [
+        translate("legend_healthy", lang),
+        translate("legend_mild", lang),
+        translate("legend_mod", lang),
+        translate("legend_severe", lang)
+    ]
 
     rgba_table = np.array(
         [mcolors.to_rgba(c) for c in stress_color_values], dtype=np.float64
@@ -316,13 +320,13 @@ def add_stress_layer(
         stress_class.astype(np.float64),
         bounds,
         colormap_fn,
-        name="Moisture Stress",
+        name="Moisture Stress" if lang == "en" else "पानी का तनाव",
         opacity=0.70,
     )
     overlay.add_to(m)
 
     legend_html = _build_legend_html(
-        "Moisture Stress",
+        translate("layer_stress", lang),
         list(zip(stress_labels, stress_color_values)),
         left_offset="10px",
     )
@@ -337,21 +341,9 @@ def add_irrigation_advisory_layer(
     advisory_code: np.ndarray,
     bounds: List[List[float]],
 ) -> folium.Map:
-    """Add a 4-class irrigation advisory overlay to the map.
-
-    Advisory codes 0-3 map to: No Irrigation, Irrigate in 3 Days,
-    Irrigate Immediately, Critical Alert.  Colours are drawn from
-    config.IRRIGATION_COLORS.
-
-    Args:
-        m: Target folium map.
-        advisory_code: 2-D integer array (H, W) with values 0-3.
-        bounds: [[south, west], [north, east]].
-
-    Returns:
-        The updated map with the advisory overlay and legend appended.
-    """
+    """Add a 4-class irrigation advisory overlay to the map."""
     import matplotlib.colors as mcolors
+    lang = st.session_state.get("lang", "en")
 
     adv_color_values: List[str] = [
         IRRIGATION_COLORS["no_irrigation"],
@@ -359,11 +351,12 @@ def add_irrigation_advisory_layer(
         IRRIGATION_COLORS["irrigate_immediately"],
         IRRIGATION_COLORS["critical_alert"],
     ]
+    
     adv_labels = [
-        "No Irrigation",
-        "Irrigate in 3 Days",
-        "Irrigate Now!",
-        "Critical Alert",
+        translate("legend_no_irr", lang),
+        translate("legend_soon_irr", lang),
+        translate("legend_now_irr", lang),
+        "Critical Alert" if lang == "en" else "अत्यंत गंभीर परिस्थिति"
     ]
 
     rgba_table = np.array(
@@ -379,13 +372,13 @@ def add_irrigation_advisory_layer(
         advisory_code.astype(np.float64),
         bounds,
         colormap_fn,
-        name="Irrigation Advisory",
+        name="Irrigation Advisory" if lang == "en" else "सिंचाई सलाह",
         opacity=0.75,
     )
     overlay.add_to(m)
 
     legend_html = _build_legend_html(
-        "Irrigation Advisory",
+        translate("layer_irr", lang),
         list(zip(adv_labels, adv_color_values)),
         left_offset="10px",
     )

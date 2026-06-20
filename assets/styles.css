@@ -1,0 +1,456 @@
+/* AgroSense AI — Premium Custom Stylesheet */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Base Styles */
+html, body, [class*="css"], .stApp {
+    font-family: 'Outfit', 'Inter', sans-serif !important;
+    background-color: #F8FAF6 !important;
+    color: #1A301E !important;
+}
+
+/* Hide Streamlit default branding */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #F1F5EF;
+}
+::-webkit-scrollbar-thumb {
+    background: #C3D5C0;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #9BB897;
+}
+
+/* --- Hero Banner (Premium & Welcoming) --- */
+.agro-hero {
+    background: linear-gradient(135deg, #123E1C 0%, #1B5E20 40%, #2A7E2E 75%, #3D9942 100%);
+    border-radius: 20px;
+    padding: 40px 48px;
+    margin-bottom: 30px;
+    position: relative;
+    overflow: hidden;
+    color: #FFFFFF;
+    box-shadow: 0 12px 32px rgba(27, 94, 32, 0.18);
+}
+.agro-hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+}
+.agro-hero-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 3.2rem;
+    font-weight: 800;
+    line-height: 1.15;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.agro-hero-sub {
+    font-size: 1.25rem;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.90);
+    margin-top: 12px;
+    max-width: 700px;
+    line-height: 1.5;
+}
+.agro-badges-row {
+    margin-top: 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.agro-badge {
+    background: rgba(255, 255, 255, 0.14);
+    color: #FFFFFF;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+.agro-badge:hover {
+    background: rgba(255, 255, 255, 0.22);
+    transform: scale(1.03);
+}
+
+/* --- Redesigned Metric Grid & Cards (₹50 Cr Look) --- */
+.metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+    margin: 24px 0;
+}
+.metric-card {
+    background: #FFFFFF;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 16px rgba(110, 130, 110, 0.08);
+    border: 1px solid #EBF1EA;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.metric-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 28px rgba(27, 94, 32, 0.12);
+    border-color: #C3D8C1;
+}
+.metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 6px;
+    height: 100%;
+    background: #1B5E20; /* Default color, overridden by categories */
+}
+.metric-card.stress-low::before { background: #2E7D32; }
+.metric-card.stress-mod::before { background: #F57F17; }
+.metric-card.stress-high::before { background: #D32F2F; }
+.metric-card.water-ok::before { background: #0277BD; }
+.metric-card.water-need::before { background: #E65100; }
+
+.metric-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+.metric-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #5C7060;
+}
+.metric-icon {
+    font-size: 1.8rem;
+    opacity: 0.9;
+}
+.metric-value-container {
+    display: flex;
+    align-items: baseline;
+}
+.metric-value {
+    font-family: 'Outfit', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #1A301E;
+    line-height: 1.1;
+}
+.metric-unit {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #7A8E7E;
+    margin-left: 6px;
+}
+.metric-footer {
+    margin-top: 14px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #5C7060;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* --- Actionable Farmer-First Alerts --- */
+.farmer-alert {
+    background: #FFFFFF;
+    border-radius: 16px;
+    padding: 24px;
+    margin: 20px 0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    border-left: 8px solid;
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    animation: slideIn 0.4s ease-out;
+}
+.farmer-alert.danger {
+    border-left-color: #D32F2F;
+    background: #FFEBEE;
+}
+.farmer-alert.warning {
+    border-left-color: #F57F17;
+    background: #FFFDE7;
+}
+.farmer-alert.success {
+    border-left-color: #2E7D32;
+    background: #E8F5E9;
+}
+.farmer-alert.info {
+    border-left-color: #0277BD;
+    background: #E1F5FE;
+}
+.alert-icon {
+    font-size: 2.2rem;
+    line-height: 1;
+}
+.alert-content h4 {
+    margin: 0 0 6px 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #1A301E;
+}
+.alert-content p {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: #3C4D3F;
+}
+
+/* --- Setup Wizard Progress Indicator --- */
+.wizard-steps {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+    position: relative;
+    padding: 0 10px;
+}
+.wizard-steps::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: #E0E7DE;
+    z-index: 1;
+    transform: translateY(-50%);
+}
+.wizard-step-node {
+    position: relative;
+    z-index: 2;
+    background: #FFFFFF;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #E0E7DE;
+    font-weight: 700;
+    font-size: 1rem;
+    color: #7A8E7E;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+}
+.wizard-step-node.active {
+    border-color: #1B5E20;
+    color: #1B5E20;
+    background: #E8F5E9;
+    transform: scale(1.15);
+    box-shadow: 0 4px 12px rgba(27, 94, 32, 0.2);
+}
+.wizard-step-node.completed {
+    border-color: #1B5E20;
+    background: #1B5E20;
+    color: #FFFFFF;
+}
+
+/* --- Animated Satellite Loading Progress --- */
+.satellite-loading {
+    text-align: center;
+    padding: 48px;
+    background: #FFFFFF;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+    border: 1px solid #EBF1EA;
+    margin: 40px auto;
+    max-width: 600px;
+}
+.satellite-icon-container {
+    font-size: 4rem;
+    position: relative;
+    display: inline-block;
+    animation: orbit 4s linear infinite;
+    margin-bottom: 24px;
+}
+.satellite-beams {
+    position: absolute;
+    top: 80%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 60px;
+    border-left: 2px dashed rgba(27, 94, 32, 0.4);
+    border-right: 2px dashed rgba(27, 94, 32, 0.4);
+    opacity: 0;
+    animation: beam-pulse 2s ease-in-out infinite;
+}
+.loading-fact-card {
+    background: #F1F6F0;
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 24px;
+    border-left: 4px solid #1B5E20;
+    font-style: italic;
+    font-size: 0.95rem;
+    color: #3C4D3F;
+}
+
+/* --- Step Wizard Choice Cards --- */
+.wizard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+.wizard-card {
+    background: #FFFFFF;
+    border-radius: 16px;
+    padding: 24px;
+    border: 2px solid #EBF1EA;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+.wizard-card:hover {
+    border-color: #A3C9A1;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(27, 94, 32, 0.05);
+}
+.wizard-card.selected {
+    border-color: #1B5E20;
+    background: #F0F7F0;
+    box-shadow: 0 4px 20px rgba(27, 94, 32, 0.1);
+}
+.wizard-card.selected::after {
+    content: '✓';
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: #1B5E20;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+/* --- Visual Crop Selection Grid --- */
+.crop-select-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+}
+.crop-select-card {
+    background: #FFFFFF;
+    border: 2px solid #EBF1EA;
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.crop-select-card:hover {
+    border-color: #A3C9A1;
+    background: #F8FAF6;
+}
+.crop-select-card.selected {
+    border-color: #1B5E20;
+    background: #E8F5E9;
+    font-weight: bold;
+}
+.crop-emoji {
+    font-size: 2.2rem;
+    margin-bottom: 8px;
+    display: block;
+}
+
+/* --- Animations --- */
+@keyframes orbit {
+    0% { transform: rotate(0deg) translateY(-10px) rotate(0deg); }
+    50% { transform: rotate(180deg) translateY(-10px) rotate(-180deg); }
+    100% { transform: rotate(360deg) translateY(-10px) rotate(-360deg); }
+}
+@keyframes beam-pulse {
+    0%, 100% { opacity: 0; transform: translateX(-50%) scaleY(0.5); }
+    50% { opacity: 1; transform: translateX(-50%) scaleY(1); }
+}
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Streamlit Native Elements Customizations */
+.stButton>button {
+    background-color: #1B5E20 !important;
+    color: white !important;
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+    padding: 10px 24px !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(27, 94, 32, 0.15) !important;
+    transition: all 0.2s ease !important;
+    font-family: 'Outfit', sans-serif !important;
+}
+.stButton>button:hover {
+    background-color: #2E7D32 !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 18px rgba(27, 94, 32, 0.25) !important;
+}
+.stButton>button:active {
+    transform: translateY(0) !important;
+}
+
+/* Secondary Button Support */
+div[data-testid="stHorizontalBlock"] .stButton>button[secondary="true"] {
+    background-color: #FFFFFF !important;
+    color: #1B5E20 !important;
+    border: 2px solid #1B5E20 !important;
+    box-shadow: none !important;
+}
+div[data-testid="stHorizontalBlock"] .stButton>button[secondary="true"]:hover {
+    background-color: #F0F7F0 !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Styled Section Headers */
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 28px 0 16px 0;
+    border-bottom: 2px solid #EBF1EA;
+    padding-bottom: 8px;
+}
+.section-header h2 {
+    margin: 0;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #123E1C;
+}
+
+/* Bilingual Subtitles */
+.bilingual-sub {
+    font-size: 0.9rem;
+    color: #6B7C6E;
+    margin-top: -6px;
+    margin-bottom: 12px;
+}

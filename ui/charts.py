@@ -13,6 +13,8 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import streamlit as st
+from translations import translate
 
 logger = logging.getLogger(__name__)
 
@@ -28,19 +30,38 @@ AGRO_PALETTE: List[str] = [
 ]
 
 CHART_TEMPLATE: Dict[str, Any] = dict(
-    plot_bgcolor="rgba(248,255,248,0.95)",
+    plot_bgcolor="rgba(248,250,246,0.95)",
     paper_bgcolor="rgba(255,255,255,1)",
-    font=dict(family="Inter, Helvetica, sans-serif", size=13, color="#1B1B1B"),
-    title_font=dict(size=18, color="#1B5E20", family="Inter, sans-serif"),
+    font=dict(family="Outfit, Inter, sans-serif", size=13, color="#1B301E"),
+    title_font=dict(size=18, color="#123E1C", family="Outfit, sans-serif"),
     colorway=AGRO_PALETTE,
-    xaxis=dict(showgrid=True, gridcolor="rgba(0,0,0,0.08)", zeroline=False),
-    yaxis=dict(showgrid=True, gridcolor="rgba(0,0,0,0.08)", zeroline=False),
+    xaxis=dict(showgrid=True, gridcolor="rgba(0,0,0,0.06)", zeroline=False),
+    yaxis=dict(showgrid=True, gridcolor="rgba(0,0,0,0.06)", zeroline=False),
     legend=dict(
         bgcolor="rgba(255,255,255,0.9)",
-        bordercolor="rgba(0,0,0,0.15)",
+        bordercolor="rgba(0,0,0,0.1)",
         borderwidth=1,
     ),
 )
+
+def translate_crop(crop_name: str, lang: str) -> str:
+    """Helper to translate crop names to Hindi/English."""
+    crop_map = {
+        "wheat": {"en": "Wheat", "hi": "गेहूं (Wheat)"},
+        "rice": {"en": "Rice", "hi": "धान (Rice)"},
+        "cotton": {"en": "Cotton", "hi": "कपास (Cotton)"},
+        "mustard": {"en": "Mustard", "hi": "सरसों (Mustard)"},
+        "sugarcane": {"en": "Sugarcane", "hi": "गन्ना (Sugarcane)"},
+        "maize": {"en": "Maize", "hi": "मक्का (Maize)"},
+        "soybean": {"en": "Soybean", "hi": "सोयाबीन (Soybean)"},
+        "chickpea": {"en": "Chickpea", "hi": "चना (Chickpea)"},
+        "groundnut": {"en": "Groundnut", "hi": "मूंगफली (Groundnut)"},
+    }
+    key = crop_name.lower().strip()
+    if key in crop_map:
+        return crop_map[key][lang]
+    return crop_name.capitalize()
+
 
 
 # ---------------------------------------------------------------------------
@@ -89,28 +110,9 @@ def plot_ndvi_timeseries(
     eos_date: Optional[str] = None,
     crop_label: str = "Field Average",
 ) -> go.Figure:
-    """Plot NDVI time series with phenological stage markers and shaded regions.
-
-    Renders raw NDVI as a dotted scatter-line, overlays an optional
-    Savitzky-Golay smoothed curve with an area fill, and annotates
-    Start-of-Season (SOS), Peak, and End-of-Season (EOS) dates when
-    provided.
-
-    Args:
-        dates: Ordered list of ISO-8601 date strings aligned with *ndvi_values*.
-        ndvi_values: Raw NDVI values (floats in [0, 1]).
-        ndvi_smoothed: Optional smoothed NDVI array of the same length.
-        sos_date: Start-of-season date string (must be a member of *dates*).
-        peak_date: Peak NDVI date string (must be a member of *dates*).
-        eos_date: End-of-season date string (must be a member of *dates*).
-        crop_label: Human-readable field or crop name for the chart title.
-
-    Returns:
-        Fully configured plotly.graph_objects.Figure.
-
-    Raises:
-        ValueError: If list lengths are inconsistent.
-    """
+    """Plot NDVI time series with phenological stage markers and shaded regions."""
+    lang = st.session_state.get("lang", "en")
+    
     if not dates:
         raise ValueError("dates list must not be empty.")
     if len(dates) != len(ndvi_values):
@@ -123,11 +125,12 @@ def plot_ndvi_timeseries(
     fig = go.Figure()
 
     # Raw NDVI scatter-line
+    raw_name = "NDVI (raw)" if lang == "en" else "फसल हरियाली (कच्चा)"
     fig.add_trace(go.Scatter(
         x=dates,
         y=ndvi_values,
         mode="markers+lines",
-        name="NDVI (raw)",
+        name=raw_name,
         line=dict(color="#81C784", width=1, dash="dot"),
         marker=dict(size=5, color="#4CAF50"),
         opacity=0.7,
@@ -136,11 +139,12 @@ def plot_ndvi_timeseries(
 
     # Smoothed NDVI with area fill
     if ndvi_smoothed is not None:
+        smooth_name = "NDVI (smoothed)" if lang == "en" else "फसल हरियाली (साफ)"
         fig.add_trace(go.Scatter(
             x=dates,
             y=ndvi_smoothed,
             mode="lines",
-            name="NDVI (smoothed)",
+            name=smooth_name,
             line=dict(color="#2E7D32", width=3),
             fill="tozeroy",
             fillcolor="rgba(46,125,50,0.12)",
@@ -148,13 +152,16 @@ def plot_ndvi_timeseries(
         ))
 
     # Phenological stage background regions
+    veg_label = "Vegetative" if lang == "en" else "बढ़ने की स्टेज (Vegetative)"
+    grain_label = "Grain Fill" if lang == "en" else "दाना भरने की स्टेज (Grain Fill)"
+    
     if sos_date and peak_date:
         fig.add_vrect(
             x0=sos_date,
             x1=peak_date,
             fillcolor="rgba(0,200,83,0.08)",
             line_width=0,
-            annotation_text="Vegetative",
+            annotation_text=veg_label,
             annotation_position="top left",
             annotation_font=dict(color="#2E7D32", size=11),
         )
@@ -164,7 +171,7 @@ def plot_ndvi_timeseries(
             x1=eos_date,
             fillcolor="rgba(255,214,0,0.08)",
             line_width=0,
-            annotation_text="Grain Fill",
+            annotation_text=grain_label,
             annotation_position="top left",
             annotation_font=dict(color="#E65100", size=11),
         )
@@ -197,10 +204,15 @@ def plot_ndvi_timeseries(
             hovertemplate=f"{label}: %{{x}}<br>NDVI: %{{y:.3f}}<extra></extra>",
         ))
 
+    crop_disp = translate_crop(crop_label, lang)
+    title_text = f"NDVI Time Series - {crop_disp}" if lang == "en" else f"फसल स्वास्थ्य ग्राफ (NDVI) - {crop_disp}"
+    xaxis_lbl = "Date" if lang == "en" else "तारीख (Date)"
+    yaxis_lbl = "NDVI Vigor" if lang == "en" else "हरियाली सूचकांक (NDVI)"
+    
     fig.update_layout(
-        title=f"NDVI Time Series - {crop_label}",
-        xaxis_title="Date",
-        yaxis_title="NDVI",
+        title=title_text,
+        xaxis_title=xaxis_lbl,
+        yaxis_title=yaxis_lbl,
         yaxis_range=[0.0, 1.0],
         hovermode="x unified",
         height=420,
@@ -217,25 +229,9 @@ def plot_stress_trend(
     vhi_values: List[float],
     cwsi_values: Optional[List[float]] = None,
 ) -> go.Figure:
-    """Plot Vegetation Health Index components and optional CWSI as an area/line chart.
-
-    Renders VHI as a filled area and VCI/TCI as dashed overlays.
-    Stress threshold lines at VHI=40 (moderate) and VHI=25 (severe)
-    are drawn for agronomic interpretation.
-
-    Args:
-        dates: Ordered list of ISO-8601 date strings.
-        vci_values: Vegetation Condition Index per date (0-100 scale).
-        tci_values: Temperature Condition Index per date (0-100 scale).
-        vhi_values: Vegetation Health Index per date (0-100 scale).
-        cwsi_values: Optional Crop Water Stress Index (0-1); plotted as x100.
-
-    Returns:
-        Fully configured plotly.graph_objects.Figure.
-
-    Raises:
-        ValueError: If list lengths are inconsistent.
-    """
+    """Plot Vegetation Health Index components and optional CWSI as an area/line chart."""
+    lang = st.session_state.get("lang", "en")
+    
     if not dates:
         raise ValueError("dates list must not be empty.")
     for name, arr in [("vci_values", vci_values), ("tci_values", tci_values),
@@ -248,11 +244,12 @@ def plot_stress_trend(
     fig = go.Figure()
 
     # VHI - primary filled area
+    vhi_lbl = "VHI (Health Index)" if lang == "en" else "फसल स्वास्थ्य सूचकांक (VHI)"
     fig.add_trace(go.Scatter(
         x=dates,
         y=vhi_values,
         mode="lines",
-        name="VHI (Health Index)",
+        name=vhi_lbl,
         line=dict(color="#00C853", width=3),
         fill="tozeroy",
         fillcolor="rgba(0,200,83,0.15)",
@@ -260,21 +257,23 @@ def plot_stress_trend(
     ))
 
     # VCI - dashed overlay
+    vci_lbl = "VCI (Vegetation Condition)" if lang == "en" else "फसल हरियाली स्थिति (VCI)"
     fig.add_trace(go.Scatter(
         x=dates,
         y=vci_values,
         mode="lines",
-        name="VCI (Vegetation Condition)",
+        name=vci_lbl,
         line=dict(color="#4CAF50", width=2, dash="dash"),
         hovertemplate="Date: %{x}<br>VCI: %{y:.1f}<extra></extra>",
     ))
 
     # TCI - dashed overlay
+    tci_lbl = "TCI (Temperature Condition)" if lang == "en" else "तापमान स्थिति (TCI)"
     fig.add_trace(go.Scatter(
         x=dates,
         y=tci_values,
         mode="lines",
-        name="TCI (Temperature Condition)",
+        name=tci_lbl,
         line=dict(color="#FF6D00", width=2, dash="dash"),
         hovertemplate="Date: %{x}<br>TCI: %{y:.1f}<extra></extra>",
     ))
@@ -282,22 +281,25 @@ def plot_stress_trend(
     # Optional CWSI (rescaled x100 for comparison)
     if cwsi_values:
         cwsi_scaled = [v * 100.0 for v in cwsi_values]
+        cwsi_lbl = "CWSI x 100" if lang == "en" else "फसल जल तनाव सूचकांक (CWSI) x 100"
         fig.add_trace(go.Scatter(
             x=dates,
             y=cwsi_scaled,
             mode="lines",
-            name="CWSI x 100",
+            name=cwsi_lbl,
             line=dict(color="#D50000", width=2),
             hovertemplate="Date: %{x}<br>CWSI x100: %{y:.1f}<extra></extra>",
         ))
 
     # Threshold reference lines
+    t1_txt = "Stress threshold (VHI < 40)" if lang == "en" else "तनाव सीमा (VHI < 40)"
+    t2_txt = "Severe stress (VHI < 25)" if lang == "en" else "गंभीर तनाव सीमा (VHI < 25)"
     fig.add_hline(
         y=40,
         line_dash="dot",
         line_color="#FF6D00",
         line_width=1.5,
-        annotation_text="Stress threshold (VHI < 40)",
+        annotation_text=t1_txt,
         annotation_position="right",
         annotation_font=dict(color="#FF6D00", size=11),
     )
@@ -306,15 +308,19 @@ def plot_stress_trend(
         line_dash="dot",
         line_color="#D50000",
         line_width=1.5,
-        annotation_text="Severe stress (VHI < 25)",
+        annotation_text=t2_txt,
         annotation_position="right",
         annotation_font=dict(color="#D50000", size=11),
     )
 
+    title_txt = "Moisture Stress Trend (8-day Rolling)" if lang == "en" else "जल तनाव सूचकांक (8-दिवसीय रोलिंग)"
+    xaxis_lbl = "Date" if lang == "en" else "तारीख (Date)"
+    yaxis_lbl = "Index Value (0-100)" if lang == "en" else "सूचकांक मान (0-100)"
+
     fig.update_layout(
-        title="Moisture Stress Trend (8-day Rolling)",
-        xaxis_title="Date",
-        yaxis_title="Index Value (0-100)",
+        title=title_txt,
+        xaxis_title=xaxis_lbl,
+        yaxis_title=yaxis_lbl,
         yaxis_range=[0, 105],
         hovermode="x unified",
         height=400,
@@ -329,19 +335,9 @@ def plot_crop_area_pie(
     areas_ha: List[float],
     colors: Optional[List[str]] = None,
 ) -> go.Figure:
-    """Render crop area distribution as an interactive donut chart.
-
-    Args:
-        crop_names: Crop name strings (will be title-cased in labels).
-        areas_ha: Corresponding area in hectares for each crop.
-        colors: Optional list of hex color codes; defaults to AGRO_PALETTE.
-
-    Returns:
-        Fully configured plotly.graph_objects.Figure.
-
-    Raises:
-        ValueError: If *crop_names* and *areas_ha* differ in length or are empty.
-    """
+    """Render crop area distribution as an interactive donut chart."""
+    lang = st.session_state.get("lang", "en")
+    
     if not crop_names:
         raise ValueError("crop_names must not be empty.")
     if len(crop_names) != len(areas_ha):
@@ -352,8 +348,11 @@ def plot_crop_area_pie(
     if colors is None:
         colors = AGRO_PALETTE[: len(crop_names)]
 
+    translated_labels = [translate_crop(c, lang) for c in crop_names]
+    hover_lbl = "<b>%{label}</b><br>Area: %{value:.1f} ha<br>Share: %{percent}" if lang == "en" else "<b>%{label}</b><br>रकबा: %{value:.1f} हेक्टेयर<br>हिस्सा: %{percent}"
+
     fig = go.Figure(go.Pie(
-        labels=[c.capitalize() for c in crop_names],
+        labels=translated_labels,
         values=areas_ha,
         marker=dict(
             colors=colors,
@@ -361,21 +360,22 @@ def plot_crop_area_pie(
         ),
         hole=0.45,
         textinfo="label+percent",
-        textfont=dict(size=13, family="Inter, sans-serif"),
-        hovertemplate="<b>%{label}</b><br>Area: %{value:.1f} ha<br>Share: %{percent}<extra></extra>",
+        textfont=dict(size=13, family="Outfit, sans-serif"),
+        hovertemplate=hover_lbl,
         pull=[0.03] * len(crop_names),
     ))
 
     total_ha = sum(areas_ha)
+    total_text = "Total" if lang == "en" else "कुल"
     fig.update_layout(
-        title="Crop Area Distribution",
+        title="Crop Area Distribution" if lang == "en" else "फसलों का क्षेत्र वितरण (रकबा)",
         annotations=[dict(
-            text=f"<b>{total_ha:,.0f} ha</b><br>Total",
+            text=f"<b>{total_ha:,.0f} ha</b><br>{total_text}",
             x=0.5,
             y=0.5,
             font_size=14,
             font_color="#2E7D32",
-            font_family="Inter, sans-serif",
+            font_family="Outfit, sans-serif",
             showarrow=False,
         )],
         height=420,
@@ -389,21 +389,9 @@ def plot_confusion_matrix(
     cm: np.ndarray,
     class_names: List[str],
 ) -> go.Figure:
-    """Render an interactive confusion matrix as an annotated heatmap.
-
-    Each cell shows the raw count and the per-row recall percentage.
-    Colour intensity encodes row-normalised recall (0-1).
-
-    Args:
-        cm: Square integer confusion matrix of shape (N, N).
-        class_names: Ordered list of N class label strings.
-
-    Returns:
-        Fully configured plotly.graph_objects.Figure.
-
-    Raises:
-        ValueError: If *cm* is not square or its dimensions don't match *class_names*.
-    """
+    """Render an interactive confusion matrix as an annotated heatmap."""
+    lang = st.session_state.get("lang", "en")
+    
     if cm.ndim != 2 or cm.shape[0] != cm.shape[1]:
         raise ValueError(f"cm must be a square 2-D array; got shape {cm.shape}.")
     if len(class_names) != cm.shape[0]:
@@ -422,7 +410,7 @@ def plot_confusion_matrix(
         for i in range(cm.shape[0])
     ]
 
-    nice_names = [c.replace("_", " ").capitalize() for c in class_names]
+    nice_names = [translate_crop(c, lang) for c in class_names]
 
     fig = go.Figure(go.Heatmap(
         z=cm_norm,
@@ -430,7 +418,7 @@ def plot_confusion_matrix(
         y=nice_names,
         text=text_matrix,
         texttemplate="%{text}",
-        textfont=dict(size=11, family="Inter, sans-serif"),
+        textfont=dict(size=11, family="Outfit, sans-serif"),
         colorscale=[
             [0.0, "#FFFFFF"],
             [0.3, "#C8E6C9"],
@@ -439,7 +427,7 @@ def plot_confusion_matrix(
         ],
         showscale=True,
         colorbar=dict(
-            title="Recall",
+            title="Recall" if lang == "en" else "शुद्धता",
             tickformat=".0%",
             len=0.8,
         ),
@@ -448,6 +436,10 @@ def plot_confusion_matrix(
             "Predicted: <b>%{x}</b><br>"
             "True: <b>%{y}</b><br>"
             "Recall: %{z:.1%}<extra></extra>"
+        ) if lang == "en" else (
+            "अनुमानित: <b>%{x}</b><br>"
+            "वास्तविक: <b>%{y}</b><br>"
+            "शुद्धता: %{z:.1%}<extra></extra>"
         ),
     ))
 
@@ -462,9 +454,9 @@ def plot_confusion_matrix(
         )
 
     fig.update_layout(
-        title="Classification Accuracy - Confusion Matrix",
-        xaxis_title="Predicted Label",
-        yaxis_title="True Label",
+        title="Classification Accuracy - Confusion Matrix" if lang == "en" else "वर्गीकरण शुद्धता - कन्फ्यूजन मैट्रिक्स",
+        xaxis_title="Predicted Label" if lang == "en" else "अनुमानित फसल (Predicted)",
+        yaxis_title="True Label" if lang == "en" else "वास्तविक फसल (True)",
         height=max(450, n * 55),
         margin=dict(t=70, b=70, l=100, r=80),
         **CHART_TEMPLATE,
@@ -477,34 +469,22 @@ def plot_irrigation_summary_bar(
     irr_needs_mm: List[float],
     stress_scores: List[float],
 ) -> go.Figure:
-    """Dual-axis bar + line chart of irrigation requirement and stress per crop.
-
-    Bars are colour-coded green to yellow to red based on irrigation magnitude.
-    A secondary y-axis line shows the stress score per crop.
-
-    Args:
-        crop_names: Crop label strings.
-        irr_needs_mm: Irrigation requirement in millimetres for each crop.
-        stress_scores: Crop stress score (0-100) for each crop.
-
-    Returns:
-        Fully configured plotly.graph_objects.Figure.
-
-    Raises:
-        ValueError: If input lists differ in length or are empty.
-    """
+    """Dual-axis bar + line chart of irrigation requirement and stress per crop."""
+    lang = st.session_state.get("lang", "en")
+    
     if not crop_names:
         raise ValueError("crop_names must not be empty.")
     if len(irr_needs_mm) != len(crop_names) or len(stress_scores) != len(crop_names):
         raise ValueError("All input lists must have the same length.")
 
     fig = make_subplots(specs=[[{"secondary_y": True}]])
-    nice_names = [c.replace("_", " ").capitalize() for c in crop_names]
+    nice_names = [translate_crop(c, lang) for c in crop_names]
 
     # Bars - irrigation need with diverging colorscale
+    bar_name = "Irrigation Need (mm)" if lang == "en" else "सिंचाई की आवश्यकता (mm)"
     fig.add_trace(
         go.Bar(
-            name="Irrigation Need (mm)",
+            name=bar_name,
             x=nice_names,
             y=irr_needs_mm,
             marker=dict(
@@ -524,9 +504,10 @@ def plot_irrigation_summary_bar(
     )
 
     # Line - stress score
+    line_name = "Stress Score" if lang == "en" else "तनाव स्कोर"
     fig.add_trace(
         go.Scatter(
-            name="Stress Score",
+            name=line_name,
             x=nice_names,
             y=stress_scores,
             mode="lines+markers",
@@ -538,15 +519,15 @@ def plot_irrigation_summary_bar(
         secondary_y=True,
     )
 
-    fig.update_yaxes(title_text="Irrigation Need (mm)", secondary_y=False, rangemode="tozero")
+    fig.update_yaxes(title_text="Irrigation Need (mm)" if lang == "en" else "सिंचाई की आवश्यकता (mm)", secondary_y=False, rangemode="tozero")
     fig.update_yaxes(
-        title_text="Stress Score (0-100)",
+        title_text="Stress Score (0-100)" if lang == "en" else "तनाव स्कोर (0-100)",
         secondary_y=True,
         range=[0, 110],
         showgrid=False,
     )
     fig.update_layout(
-        title="Irrigation Need & Stress by Crop",
+        title="Irrigation Need & Stress by Crop" if lang == "en" else "फसलों के अनुसार सिंचाई आवश्यकता और तनाव",
         hovermode="x unified",
         height=440,
         margin=dict(t=70, b=60, l=60, r=100),
@@ -561,33 +542,26 @@ def plot_phenology_gantt(
     peak_dates: List[str],
     eos_dates: List[str],
 ) -> go.Figure:
-    """Gantt-style horizontal bar chart of crop growth stage timelines.
-
-    Each crop row is split into Vegetative, Reproductive, and Grain Fill
-    stages derived from the SOS to Peak to EOS phenological dates.
-
-    Args:
-        crop_names: Crop name strings.
-        sos_dates: Start-of-season dates (ISO-8601 or empty string to skip).
-        peak_dates: Peak NDVI dates.
-        eos_dates: End-of-season dates.
-
-    Returns:
-        Fully configured plotly.graph_objects.Figure.
-
-    Raises:
-        ValueError: If input list lengths differ.
-    """
+    """Gantt-style horizontal bar chart of crop growth stage timelines."""
+    lang = st.session_state.get("lang", "en")
+    
     if not (len(crop_names) == len(sos_dates) == len(peak_dates) == len(eos_dates)):
         raise ValueError("All input lists must have the same length.")
 
-    stage_colors: Dict[str, str] = {
-        "Vegetative": "#4CAF50",
-        "Reproductive": "#FFD600",
-        "Grain Fill": "#FF8F00",
+    stages_data: List[Dict[str, str]] = []
+
+    # Map stage display names based on language
+    stage_names_map = {
+        "Vegetative": "Vegetative" if lang == "en" else "वानस्पतिक (बढ़ना)",
+        "Reproductive": "Reproductive" if lang == "en" else "प्रजनन (फूल/बालियां)",
+        "Grain Fill": "Grain Fill" if lang == "en" else "दाना भरना"
     }
 
-    stages_data: List[Dict[str, str]] = []
+    stage_colors: Dict[str, str] = {
+        stage_names_map["Vegetative"]: "#4CAF50",
+        stage_names_map["Reproductive"]: "#FFD600",
+        stage_names_map["Grain Fill"]: "#FF8F00",
+    }
 
     for crop, sos, peak, eos in zip(crop_names, sos_dates, peak_dates, eos_dates):
         if not all([sos, peak, eos]):
@@ -603,22 +577,23 @@ def plot_phenology_gantt(
 
         mid_ts = sos_ts + (peak_ts - sos_ts) / 2
 
-        for start, end, stage in [
+        for start, end, stage_key in [
             (sos_ts, mid_ts, "Vegetative"),
             (mid_ts, peak_ts, "Reproductive"),
             (peak_ts, eos_ts, "Grain Fill"),
         ]:
             stages_data.append({
-                "Task": crop.replace("_", " ").capitalize(),
+                "Task": translate_crop(crop, lang),
                 "Start": str(start.date()),
                 "Finish": str(end.date()),
-                "Stage": stage,
+                "Stage": stage_names_map[stage_key],
             })
 
     if not stages_data:
         fig = go.Figure()
+        err_msg = "No phenology data available" if lang == "en" else "फसल चक्र की जानकारी उपलब्ध नहीं है"
         fig.update_layout(
-            title="No phenology data available - ensure SOS/Peak/EOS dates are populated",
+            title=err_msg,
             height=250,
             **CHART_TEMPLATE,
         )
@@ -634,10 +609,15 @@ def plot_phenology_gantt(
         y="Task",
         color="Stage",
         color_discrete_map=color_map,
-        title="Crop Growth Stage Timeline",
+        title="Crop Growth Stage Timeline" if lang == "en" else "फसल वृद्धि का समय चक्र (Timeline)",
         hover_data={"Start": True, "Finish": True, "Stage": True},
     )
     fig.update_yaxes(autorange="reversed")
+    
+    # Translate axes labels
+    fig.update_xaxes(title_text="Date" if lang == "en" else "तारीख")
+    fig.update_yaxes(title_text="Crop" if lang == "en" else "फसल")
+    
     fig.update_layout(
         height=max(320, len(crop_names) * 65),
         margin=dict(t=70, b=60, l=100, r=40),
@@ -651,22 +631,9 @@ def plot_stress_by_stage_bar(
     stage_areas_pct: List[float],
     stage_stress_means: List[float],
 ) -> go.Figure:
-    """Dual-axis bar + line chart of area coverage and mean stress per growth stage.
-
-    Bars show the percentage of the study area in each growth stage.
-    A secondary line shows the mean stress score per stage.
-
-    Args:
-        stage_names: Internal stage identifiers (e.g., "vegetative").
-        stage_areas_pct: Percentage of total area in each stage (sums to ~100).
-        stage_stress_means: Mean stress score (0-100) per stage.
-
-    Returns:
-        Fully configured plotly.graph_objects.Figure.
-
-    Raises:
-        ValueError: If input lists differ in length.
-    """
+    """Dual-axis bar + line chart of area coverage and mean stress per growth stage."""
+    lang = st.session_state.get("lang", "en")
+    
     if not stage_names:
         raise ValueError("stage_names must not be empty.")
     if len(stage_areas_pct) != len(stage_names) or len(stage_stress_means) != len(stage_names):
@@ -680,16 +647,27 @@ def plot_stress_by_stage_bar(
         "grain_fill": "#FF8F00",
         "maturity": "#BF360C",
     }
+    
+    stage_translations = {
+        "pre_sowing": "Pre-sowing" if lang == "en" else "बुआई से पहले",
+        "establishment": "Establishment" if lang == "en" else "अंकुरण/शुरुआत",
+        "vegetative": "Vegetative" if lang == "en" else "बढ़ने की स्टेज",
+        "reproductive": "Reproductive" if lang == "en" else "फूल/बालियां",
+        "grain_fill": "Grain Fill" if lang == "en" else "दाना भरना",
+        "maturity": "Maturity" if lang == "en" else "फसल पकाव"
+    }
+    
     bar_colors = [stage_colors.get(s.lower(), "#9E9E9E") for s in stage_names]
-    nice_names = [s.replace("_", " ").title() for s in stage_names]
+    nice_names = [stage_translations.get(s.lower(), s.replace("_", " ").title()) for s in stage_names]
 
     fig = make_subplots(specs=[[{"secondary_y": True}]])
 
+    bar_name = "Area (%)" if lang == "en" else "रकबा (%)"
     fig.add_trace(
         go.Bar(
             x=nice_names,
             y=stage_areas_pct,
-            name="Area (%)",
+            name=bar_name,
             marker_color=bar_colors,
             marker_line=dict(color="rgba(255,255,255,0.4)", width=1),
             opacity=0.88,
@@ -701,11 +679,12 @@ def plot_stress_by_stage_bar(
         secondary_y=False,
     )
 
+    line_name = "Mean Stress" if lang == "en" else "औसत जल तनाव"
     fig.add_trace(
         go.Scatter(
             x=nice_names,
             y=stage_stress_means,
-            name="Mean Stress",
+            name=line_name,
             mode="lines+markers",
             marker=dict(size=12, color="#D50000", symbol="circle",
                         line=dict(color="white", width=1.5)),
@@ -715,15 +694,15 @@ def plot_stress_by_stage_bar(
         secondary_y=True,
     )
 
-    fig.update_yaxes(title_text="Area (%)", secondary_y=False, rangemode="tozero")
+    fig.update_yaxes(title_text="Area (%)" if lang == "en" else "क्षेत्र प्रतिशत (%)", secondary_y=False, rangemode="tozero")
     fig.update_yaxes(
-        title_text="Mean Stress Score (0-100)",
+        title_text="Mean Stress Score (0-100)" if lang == "en" else "औसत तनाव स्कोर (0-100)",
         secondary_y=True,
         range=[0, 110],
         showgrid=False,
     )
     fig.update_layout(
-        title="Stress by Growth Stage",
+        title="Stress by Growth Stage" if lang == "en" else "फसल चक्र के चरणों के अनुसार जल तनाव",
         height=400,
         margin=dict(t=70, b=60, l=60, r=80),
         **CHART_TEMPLATE,
@@ -839,22 +818,9 @@ def plot_shap_importance(
     shap_values: List[float],
     top_n: int = 20,
 ) -> go.Figure:
-    """Horizontal bar chart of SHAP mean absolute feature importances.
-
-    Bars are sorted descending by importance and colour-graded on a
-    green gradient (lighter = lower, darker = higher importance).
-
-    Args:
-        feature_names: Raw feature name strings.
-        shap_values: Corresponding mean |SHAP| value for each feature.
-        top_n: Maximum number of top features to display (default 20).
-
-    Returns:
-        Fully configured plotly.graph_objects.Figure.
-
-    Raises:
-        ValueError: If *feature_names* and *shap_values* differ in length.
-    """
+    """Horizontal bar chart of SHAP mean absolute feature importances."""
+    lang = st.session_state.get("lang", "en")
+    
     if len(feature_names) != len(shap_values):
         raise ValueError("feature_names and shap_values must have the same length.")
     if top_n < 1:
@@ -881,9 +847,11 @@ def plot_shap_importance(
         hovertemplate="<b>%{y}</b><br>Mean |SHAP|: %{x:.5f}<extra></extra>",
     ))
 
+    num_f = min(top_n, len(df))
+    title_text = f"Top {num_f} Feature Importances (SHAP)" if lang == "en" else f"मुख्य {num_f} महत्वपूर्ण पैरामीटर्स (AI)"
     fig.update_layout(
-        title=f"Top {min(top_n, len(df))} Feature Importances (SHAP)",
-        xaxis_title="Mean |SHAP Value|",
+        title=title_text,
+        xaxis_title="Mean |SHAP Value|" if lang == "en" else "औसत प्रभाव (SHAP)",
         xaxis=dict(showgrid=True, gridcolor="rgba(0,0,0,0.08)", zeroline=False),
         height=max(420, len(df) * 26),
         margin=dict(t=70, b=60, l=180, r=80),

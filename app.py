@@ -74,6 +74,8 @@ from ui.map_renderer import (
     get_bounds_from_geometry, get_center_from_bounds,
 )
 from ui.export import export_advisory_csv, generate_pdf_report, export_all_geotiffs_zip
+from ui.components import load_custom_css, render_hero_banner, render_step_indicator, render_farmer_alert, render_loading_screen, render_how_it_works
+from translations import translate
 
 try:
     from streamlit_folium import st_folium
@@ -503,54 +505,60 @@ def render_metric_card(
     icon: str,
     delta: Optional[str] = None,
 ) -> None:
-    """Render a single colorful metric card."""
+    """Render a single colorful metric card matching the premium stylesheet."""
+    lang = st.session_state.get("lang", "en")
+    category = "stress-low"
+    lbl_lower = label.lower()
+    
+    if "severe" in lbl_lower or "critical" in lbl_lower or "tress" in lbl_lower:
+        try:
+            val_float = float(value)
+            if val_float > 15:
+                category = "stress-high"
+            else:
+                category = "stress-mod"
+        except ValueError:
+            category = "stress-high"
+    elif "irrigation" in lbl_lower or "need" in lbl_lower or "deficit" in lbl_lower:
+        category = "water-need"
+    elif "et" in lbl_lower or "reference" in lbl_lower or "area" in lbl_lower:
+        category = "water-ok"
+        
+    delta_html = f'<div class="metric-footer">{delta}</div>' if delta else ''
+    
     st.markdown(f"""
-    <div class="metric-card" style="border-top-color:{color}" data-icon="{icon}">
-        <div class="metric-label">{label}</div>
-        <div class="metric-value" style="color:{color}">
-            {value}<span class="metric-unit">{unit}</span>
+    <div class="metric-card {category}" style="border-top-color:{color}; margin-bottom: 12px;">
+        <div class="metric-header">
+            <span class="metric-label">{label}</span>
+            <span class="metric-icon">{icon}</span>
         </div>
-        {f'<div style="font-size:0.75em;color:#888;margin-top:4px">{delta}</div>' if delta else ''}
+        <div class="metric-value-container">
+            <span class="metric-value" style="color:{color}">{value}</span>
+            <span class="metric-unit">{unit}</span>
+        </div>
+        {delta_html}
     </div>
     """, unsafe_allow_html=True)
 
 
 def render_hero() -> None:
     """Render the AgroSense AI hero section."""
-    st.markdown("""
-    <div class="agro-hero">
-        <div style="display:flex;align-items:center;gap:20px">
-            <div style="font-size:3em;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.3))">🌱</div>
-            <div>
-                <h1 class="agro-hero-title">AgroSense AI</h1>
-                <p class="agro-hero-sub">
-                    AI-Driven Crop Intelligence · Moisture Stress Detection · Precision Irrigation Advisory
-                </p>
-                <div style="margin-top:12px">
-                    <span class="agro-badge">🛰️ Sentinel-1/2</span>
-                    <span class="agro-badge">🌡️ ERA5 Climate</span>
-                    <span class="agro-badge">🌧️ CHIRPS Rainfall</span>
-                    <span class="agro-badge">🤖 XGBoost + LightGBM</span>
-                    <span class="agro-badge">📐 FAO-56 Water Balance</span>
-                </div>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    lang = st.session_state.get("lang", "en")
+    load_custom_css("assets/styles.css")
+    render_hero_banner(lang)
 
 
 def render_gee_status(gee_status: Dict[str, Any]) -> None:
     """Render GEE connectivity badge."""
-    if gee_status["gee_initialized"]:
-        st.markdown("""
-        <div class="success-card">
-            🛰️ <strong>Google Earth Engine: Connected</strong> — Live satellite data active
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        st.markdown("""
-        <div class="warning-card">
-            ❌ <strong>Google Earth Engine: Disconnected</strong> — Live satellite data inactive. Please configure your Service Account JSON Key.
+    lang = st.session_state.get("lang", "en")
+    if not gee_status["gee_initialized"]:
+        st.markdown(f"""
+        <div class="farmer-alert danger">
+            <div class="alert-icon">❌</div>
+            <div class="alert-content">
+                <h4>{"Google Earth Engine: Disconnected" if lang == "en" else "गूगल अर्थ इंजन: डिस्कनेक्टेड"}</h4>
+                <p>{"Live satellite data inactive. Please check secrets.toml configuration." if lang == "en" else "लाइव सैटेलाइट डेटा काम नहीं कर रहा है। कृपया secrets.toml चेक करें।"}</p>
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -652,118 +660,105 @@ def main() -> None:
 
 
 def render_setup_page(params: Dict[str, Any], gee_status: Dict[str, Any]) -> None:
-    """Render the initial setup/configuration page."""
+    """Render the step-by-step wizard for configuring crop analysis."""
+    lang = st.session_state.get("lang", "en")
     
-    st.markdown("## ⚙️ Configure Your Analysis")
-    st.markdown("Follow the steps below to set up your precision agriculture analysis.")
+    if "wizard_step" not in st.session_state:
+        st.session_state["wizard_step"] = 1
+        
+    current_step = st.session_state["wizard_step"]
     
-    # Earth Engine Credentials Status
+    # Earth Engine Credentials Warning (only if missing)
     if not gee_status["gee_initialized"]:
-        st.markdown("""
-        <div class="warning-card" style="margin-bottom: 24px;">
-            <h3 style="margin-top: 0; color: #D32F2F;">🔑 Google Earth Engine Service Account Required</h3>
-            <p>To run live satellite mapping and precision AI analytics, your Google Earth Engine Service Account key must be configured.</p>
-            <strong>How to configure:</strong>
-            <ol>
-                <li>Create a Google Cloud service account with <strong>Earth Engine API Resource Viewer</strong> permissions.</li>
-                <li>Generate and download a <strong>JSON private key</strong>.</li>
-                <li>Place the credentials inside <code>.streamlit/secrets.toml</code> on your local machine:
-                    <pre style="background-color: #F5F5F5; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 0.85em;">
-[gee_service_account]
-type = "service_account"
-project_id = "your-gcp-project-id"
-private_key_id = "your-private-key-id"
-private_key = "-----BEGIN PRIVATE KEY-----\\nYOUR_PRIVATE_KEY_HERE\\n-----END PRIVATE KEY-----\\n"
-client_email = "your-service-account-email"
-...
-                    </pre>
-                </li>
-                <li>Restart the Streamlit server or refresh the page.</li>
-            </ol>
-            <p style="font-size: 0.9em; margin-bottom: 0;"><em>Note: Google Earth Engine is entirely free for research, developer evaluation, and educational usage.</em></p>
+        st.markdown(f"""
+        <div class="farmer-alert danger">
+            <div class="alert-icon">🔑</div>
+            <div class="alert-content">
+                <h4>{"Google Earth Engine Key Required" if lang == "en" else "गूगल अर्थ इंजन कनेक्शन आवश्यक"}</h4>
+                <p>{"Please set up service account credentials in secrets.toml to proceed." if lang == "en" else "आगे बढ़ने के लिए कृपया secrets.toml में सेवा खाता क्रेडेंशियल सेटअप करें।"}</p>
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
-    col1, col2 = st.columns([1, 1])
+    # Render step progress bar
+    render_step_indicator(current_step, total_steps=5)
     
-    with col1:
-        st.markdown("""
-        <div class="info-card">
-        <strong>📋 Setup Checklist</strong><br><br>
-        1️⃣ <strong>Define Study Area</strong> — Draw, upload, or select from WRIS<br>
-        2️⃣ <strong>Select Season & Year</strong> — Kharif / Rabi / Zaid<br>
-        3️⃣ <strong>Enter Expected Crops</strong> — System maps to FAO-56 Kc values<br>
-        4️⃣ <strong>Configure Satellite Sources</strong> — Sentinel-2 + Sentinel-1<br>
-        5️⃣ <strong>Run Analysis</strong> — Full AI pipeline launches
+    # Step 1: Location Setup
+    if current_step == 1:
+        st.markdown(f"### {translate('wizard_step_1', lang)}")
+        
+        # Choice Cards
+        st.markdown(f"""
+        <div class="wizard-grid">
+            <div class="wizard-card {'selected' if params.get('geo_mode') == 'Draw Custom Area' else ''}">
+                <h4 style="margin: 0 0 8px 0; color: #1B5E20; font-weight: 700;">{translate('option_map', lang)}</h4>
+                <p style="margin: 0; font-size: 0.9rem; color: #5C7060; line-height: 1.4;">{translate('option_map_desc', lang)}</p>
+            </div>
+            <div class="wizard-card {'selected' if params.get('geo_mode') == 'Upload GeoJSON' else ''}">
+                <h4 style="margin: 0 0 8px 0; color: #1B5E20; font-weight: 700;">{translate('option_upload', lang)}</h4>
+                <p style="margin: 0; font-size: 0.9rem; color: #5C7060; line-height: 1.4;">{translate('option_upload_desc', lang)}</p>
+            </div>
+            <div class="wizard-card {'selected' if params.get('geo_mode') == 'Select Command Area (WRIS)' else ''}">
+                <h4 style="margin: 0 0 8px 0; color: #1B5E20; font-weight: 700;">{translate('option_wris', lang)}</h4>
+                <p style="margin: 0; font-size: 0.9rem; color: #5C7060; line-height: 1.4;">{translate('option_wris_desc', lang)}</p>
+            </div>
         </div>
         """, unsafe_allow_html=True)
         
-        # Current params summary
-        st.markdown("### 📊 Current Configuration")
-        st.markdown(f"**Season:** {params.get('season', '—')} {params.get('year', '—')}")
-        st.markdown(f"**Date Range:** `{params.get('start_date', '—')}` → `{params.get('end_date', '—')}`")
-        crops_str = ", ".join([c.replace("_", " ").title() for c in params.get("crops", [])]) or "—"
-        st.markdown(f"**Crops:** {crops_str}")
-        st.markdown(f"**Satellite:** {params.get('optical_source', '—')} + {params.get('sar_source', '—')}")
-        st.markdown(f"**Cloud threshold:** {params.get('cloud_pct', 20)}%")
-        st.markdown(f"**Temporal resolution:** {params.get('temporal_resolution', 'biweekly').capitalize()}")
-    
-    with col2:
-        # Map for drawing
-        if FOLIUM_OK:
-            st.markdown("### 🗺️ Study Area Map")
-            
-            if params.get("geo_mode") == "Use My Current Location":
-                if "user_location" in st.session_state:
-                    st.success("✅ Centered on your current location. A 1km x 1km region has been automatically selected (outlined in blue).")
-                    st.info("💡 You can click 'Run AgroSense Analysis' below, or switch to 'Draw Custom Area' to select a different custom shape.")
-                else:
-                    st.warning("⚠️ Requesting browser geolocation... Please accept the browser prompt. If it does not appear, click 'Center Map on My Location' in the sidebar.")
+        # Display selected detail
+        if params.get("geo_mode") == "Select Command Area (WRIS)":
+            if params.get("wris_data"):
+                st.success(f"📍 {params['wris_data'].get('name', 'Command Area')} " + ("selected!" if lang == "en" else "चुन लिया गया है!"))
             else:
-                st.info("✏️ Use the toolbar on the map to draw your field boundary (polygon or rectangle).")
+                st.info("👈 Please select a Canal Command Area in the sidebar panel on the left." if lang == "en" else "👈 कृपया बाईं ओर दिए गए पैनल में सिचाई कमांड एरिया चुनें।")
+        elif params.get("geo_mode") == "Upload GeoJSON":
+            if params.get("uploaded_geometry"):
+                st.success("📁 GeoJSON loaded successfully!" if lang == "en" else "📁 बाउंड्री फाइल लोड हो गई!")
+            else:
+                st.info("👈 Please upload a GeoJSON file in the sidebar panel on the left." if lang == "en" else "👈 कृपया बाईं ओर दिए गए पैनल में फाइल अपलोड करें।")
+                
+        # Interactive map drawing
+        if FOLIUM_OK:
+            st.markdown(f"**{translate('map_instruction', lang)}**")
             
-            # center map on user location if available
+            # Center coordinates logic
             if "user_location" in st.session_state:
                 center_lat, center_lon = st.session_state["user_location"]
                 zoom_start = 13
             else:
-                center_lat, center_lon = 22.5, 79.0  # Central India default
+                center_lat, center_lon = 22.5, 79.0
                 zoom_start = 7
-            
+                
             if params.get("geo_mode") == "Select Command Area (WRIS)" and params.get("wris_data"):
                 wris = params["wris_data"]
-                bounds = wris.get("geometry", {}).get("coordinates", [])
-                if bounds:
-                    from ui.map_renderer import get_bounds_from_geometry, get_center_from_bounds
-                    b = get_bounds_from_geometry(wris.get("geometry", {}))
+                geom = wris.get("geometry", {})
+                if geom:
+                    b = get_bounds_from_geometry(geom)
                     center_lat, center_lon = get_center_from_bounds(b)
                     zoom_start = 11
             elif params.get("geo_mode") == "Upload GeoJSON" and params.get("uploaded_geometry"):
                 geom = params["uploaded_geometry"]
-                from ui.map_renderer import get_bounds_from_geometry, get_center_from_bounds
                 b = get_bounds_from_geometry(geom)
                 center_lat, center_lon = get_center_from_bounds(b)
                 zoom_start = 12
             elif params.get("geo_mode") == "Use My Current Location" and "user_location" in st.session_state:
                 lat, lon = st.session_state["user_location"]
                 geom = get_bbox_around_coords(lat, lon, size_m=1000.0)
-                from ui.map_renderer import get_bounds_from_geometry, get_center_from_bounds
                 b = get_bounds_from_geometry(geom)
                 center_lat, center_lon = get_center_from_bounds(b)
                 zoom_start = 14
-            
+
             m = create_base_map(center_lat, center_lon, zoom_start=zoom_start)
             
-            # Mark user current position
+            # Markers/overlays
             if "user_location" in st.session_state:
                 import folium
                 folium.Marker(
                     location=st.session_state["user_location"],
-                    popup="📍 Center Location",
-                    tooltip="Your Geolocation",
+                    popup="📍 My Location",
                     icon=folium.Icon(color="red", icon="home")
                 ).add_to(m)
-            
+                
             if params.get("geo_mode") == "Select Command Area (WRIS)" and params.get("wris_data"):
                 geom = params["wris_data"].get("geometry", {})
                 if geom:
@@ -771,8 +766,8 @@ client_email = "your-service-account-email"
                     folium.GeoJson(
                         {"type": "Feature", "geometry": geom},
                         style_function=lambda x: {
-                            "fillColor": "#00C853", "fillOpacity": 0.15,
-                            "color": "#00C853", "weight": 2,
+                            "fillColor": "#1B5E20", "fillOpacity": 0.15,
+                            "color": "#1B5E20", "weight": 2.5,
                         },
                         tooltip=params["wris_data"].get("name", "Command Area"),
                     ).add_to(m)
@@ -782,8 +777,8 @@ client_email = "your-service-account-email"
                 folium.GeoJson(
                     {"type": "Feature", "geometry": geom},
                     style_function=lambda x: {
-                        "fillColor": "#00C853", "fillOpacity": 0.15,
-                        "color": "#00C853", "weight": 2,
+                        "fillColor": "#1B5E20", "fillOpacity": 0.15,
+                        "color": "#1B5E20", "weight": 2.5,
                     },
                     tooltip="Uploaded Area",
                 ).add_to(m)
@@ -794,13 +789,34 @@ client_email = "your-service-account-email"
                 folium.GeoJson(
                     {"type": "Feature", "geometry": geom},
                     style_function=lambda x: {
-                        "fillColor": "#00E5FF", "fillOpacity": 0.12,
-                        "color": "#00E5FF", "weight": 2.5,
+                        "fillColor": "#0277BD", "fillOpacity": 0.12,
+                        "color": "#0277BD", "weight": 2.5,
                         "dashArray": "5 5",
                     },
                     tooltip="Current Location 1km Box",
                 ).add_to(m)
             
+            # Map drawing toolbar
+            if params.get("geo_mode") == "Draw Custom Area":
+                from folium.plugins import Draw
+                Draw(
+                    export=False,
+                    position="topleft",
+                    draw_options={
+                        "polyline": False,
+                        "circle": False,
+                        "circlemarker": False,
+                        "marker": False,
+                        "polygon": {
+                            "allowIntersection": False,
+                            "shapeOptions": {"color": "#1B5E20", "fillColor": "#1B5E20", "fillOpacity": 0.15}
+                        },
+                        "rectangle": {
+                            "shapeOptions": {"color": "#1B5E20", "fillColor": "#1B5E20", "fillOpacity": 0.15}
+                        }
+                    }
+                ).add_to(m)
+
             m = finalize_map(m)
             folium_output = st_folium(m, height=380, use_container_width=True)
             if folium_output and "all_drawings" in folium_output and folium_output["all_drawings"]:
@@ -809,44 +825,185 @@ client_email = "your-service-account-email"
                 if geom:
                     st.session_state["drawn_geometry"] = geom
         else:
-            st.markdown("""
-            <div class="warning-card">
-                📦 streamlit-folium not installed.<br>
-                Run: <code>pip install streamlit-folium folium</code>
+            st.warning("Install folium map components.")
+
+        # Welcome explainer
+        render_how_it_works(lang)
+
+        # Navigation
+        st.markdown("<div style='margin-top: 30px;'></div>", unsafe_allow_html=True)
+        col_prev, col_spacer, col_next = st.columns([1, 2, 1])
+        with col_next:
+            if st.button(translate("btn_next", lang), use_container_width=True, key="next_step_1"):
+                # Geometry validation
+                geom_ok = False
+                if params.get("geo_mode") == "Select Command Area (WRIS)" and params.get("wris_data"):
+                    geom_ok = True
+                elif params.get("geo_mode") == "Upload GeoJSON" and params.get("uploaded_geometry"):
+                    geom_ok = True
+                elif params.get("geo_mode") == "Draw Custom Area" and st.session_state.get("drawn_geometry"):
+                    geom_ok = True
+                elif params.get("geo_mode") == "Use My Current Location" and "user_location" in st.session_state:
+                    geom_ok = True
+                    
+                if geom_ok:
+                    st.session_state["wizard_step"] = 2
+                    st.rerun()
+                else:
+                    st.error("❌ Please draw or select a field boundary first!" if lang == "en" else "❌ कृपया पहले अपने खेत की बाउंड्री मार्क करें!")
+
+    # Step 2: Season & Dates
+    elif current_step == 2:
+        st.markdown(f"### {translate('wizard_step_2', lang)}")
+        
+        st.markdown(f"""
+        <div class="wizard-grid">
+            <div class="wizard-card {'selected' if params.get('season') == 'Kharif' else ''}">
+                <h4 style="margin: 0 0 8px 0; color: #1B5E20; font-weight: 700;">{translate('season_kharif_title', lang)}</h4>
+                <p style="margin: 0; font-size: 0.9rem; color: #5C7060; line-height: 1.4;">{translate('season_kharif_desc', lang)}</p>
             </div>
-            """, unsafe_allow_html=True)
-    
-    # Run button
-    st.markdown("---")
-    st.markdown("""
-    <div class="run-btn-container">
-        <p style="font-size:1.1em;font-weight:600;color:#2E7D32;margin-bottom:12px">
-            🚀 Ready to analyze? Click Run Analysis to launch the full AI pipeline.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
-    with col_btn2:
-        if gee_status["gee_initialized"]:
-            run_clicked = st.button(
-                "🌱 Run AgroSense Analysis",
-                type="primary",
-                use_container_width=True,
-                help="Launches the complete satellite data pipeline and AI analysis",
-            )
-        else:
-            st.button(
-                "🔒 GEE Connection Required to Run",
-                type="primary",
-                use_container_width=True,
-                disabled=True,
-                help="Please configure your Google Earth Engine Service Account key to enable running analyses.",
-            )
-            run_clicked = False
-    
-    if run_clicked:
-        _run_analysis(params, gee_status)
+            <div class="wizard-card {'selected' if params.get('season') == 'Rabi' else ''}">
+                <h4 style="margin: 0 0 8px 0; color: #1B5E20; font-weight: 700;">{translate('season_rabi_title', lang)}</h4>
+                <p style="margin: 0; font-size: 0.9rem; color: #5C7060; line-height: 1.4;">{translate('season_rabi_desc', lang)}</p>
+            </div>
+            <div class="wizard-card {'selected' if params.get('season') == 'Zaid' else ''}">
+                <h4 style="margin: 0 0 8px 0; color: #1B5E20; font-weight: 700;">{translate('season_zaid_title', lang)}</h4>
+                <p style="margin: 0; font-size: 0.9rem; color: #5C7060; line-height: 1.4;">{translate('season_zaid_desc', lang)}</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.info("💡 " + ("Dates and target year are synchronized with your selections in the sidebar." if lang == "en" else "💡 तारीख और वर्ष आपके द्वारा बाईं ओर चुने गए विकल्पों से लिए गए हैं।"))
+        st.markdown(f"**{translate('year_label', lang)}:** `{params.get('year')}`")
+        st.markdown(f"**Date Range:** `{params.get('start_date')}` → `{params.get('end_date')}`")
+        
+        # Navigation
+        st.markdown("<div style='margin-top: 30px;'></div>", unsafe_allow_html=True)
+        col_prev, col_spacer, col_next = st.columns([1, 2, 1])
+        with col_prev:
+            if st.button(translate("btn_prev", lang), use_container_width=True, key="prev_step_2"):
+                st.session_state["wizard_step"] = 1
+                st.rerun()
+        with col_next:
+            if st.button(translate("btn_next", lang), use_container_width=True, key="next_step_2"):
+                st.session_state["wizard_step"] = 3
+                st.rerun()
+
+    # Step 3: Crop Types
+    elif current_step == 3:
+        st.markdown(f"### {translate('wizard_step_3', lang)}")
+        
+        st.markdown(f"""
+        <div class="crop-select-grid">
+            <div class="crop-select-card {'selected' if 'wheat' in params.get('crops', []) else ''}">
+                <span class="crop-emoji">🌾</span>
+                <span style="font-size:0.95rem; font-weight: 600;">{"Wheat" if lang == "en" else "गेहूं"}</span>
+            </div>
+            <div class="crop-select-card {'selected' if 'rice' in params.get('crops', []) else ''}">
+                <span class="crop-emoji">🍚</span>
+                <span style="font-size:0.95rem; font-weight: 600;">{"Rice" if lang == "en" else "धान"}</span>
+            </div>
+            <div class="crop-select-card {'selected' if 'cotton' in params.get('crops', []) else ''}">
+                <span class="crop-emoji">🌱</span>
+                <span style="font-size:0.95rem; font-weight: 600;">{"Cotton" if lang == "en" else "कपास"}</span>
+            </div>
+            <div class="crop-select-card {'selected' if 'mustard' in params.get('crops', []) else ''}">
+                <span class="crop-emoji">🌼</span>
+                <span style="font-size:0.95rem; font-weight: 600;">{"Mustard" if lang == "en" else "सरसों"}</span>
+            </div>
+            <div class="crop-select-card {'selected' if 'sugarcane' in params.get('crops', []) else ''}">
+                <span class="crop-emoji">🎋</span>
+                <span style="font-size:0.95rem; font-weight: 600;">{"Sugarcane" if lang == "en" else "गन्ना"}</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.info(translate("crop_help_note", lang))
+        st.info("👈 " + ("Select expected crops from the multiselect box in the sidebar on the left." if lang == "en" else "👈 बाईं ओर दिए गए पैनल में अपनी फसलों को चुनें।"))
+        
+        # Navigation
+        st.markdown("<div style='margin-top: 30px;'></div>", unsafe_allow_html=True)
+        col_prev, col_spacer, col_next = st.columns([1, 2, 1])
+        with col_prev:
+            if st.button(translate("btn_prev", lang), use_container_width=True, key="prev_step_3"):
+                st.session_state["wizard_step"] = 2
+                st.rerun()
+        with col_next:
+            if st.button(translate("btn_next", lang), use_container_width=True, key="next_step_3"):
+                if params.get("crops"):
+                    st.session_state["wizard_step"] = 4
+                    st.rerun()
+                else:
+                    st.error("❌ Please select at least one crop in the sidebar!" if lang == "en" else "❌ कृपया बाईं ओर कम से कम एक फसल चुनें!")
+
+    # Step 4: Photo Upload
+    elif current_step == 4:
+        st.markdown(f"### {translate('wizard_step_4', lang)}")
+        st.markdown(f"<div style='margin-bottom:16px'><span class='agro-badge'>{translate('optional_badge', lang)}</span></div>", unsafe_allow_html=True)
+        
+        uploaded_image = st.file_uploader(
+            translate("upload_dashed_box", lang),
+            type=["png", "jpg", "jpeg"]
+        )
+        if uploaded_image:
+            st.session_state["field_photo"] = uploaded_image
+            st.success("✅ " + ("Photo uploaded successfully!" if lang == "en" else "फोटो अपलोड हो गई!"))
+            
+        # Navigation
+        st.markdown("<div style='margin-top: 30px;'></div>", unsafe_allow_html=True)
+        col_prev, col_spacer, col_next = st.columns([1, 2, 1])
+        with col_prev:
+            if st.button(translate("btn_prev", lang), use_container_width=True, key="prev_step_4"):
+                st.session_state["wizard_step"] = 3
+                st.rerun()
+        with col_next:
+            btn_text = translate("btn_next", lang) if uploaded_image else translate("btn_skip", lang)
+            if st.button(btn_text, use_container_width=True, key="next_step_4"):
+                st.session_state["wizard_step"] = 5
+                st.rerun()
+
+    # Step 5: Summary & Launch
+    elif current_step == 5:
+        st.markdown(f"### {translate('wizard_step_5', lang)}")
+        
+        crops_str = ", ".join([translate_crop(c, lang) for c in params.get("crops", [])])
+        photo_status = translate("photo_yes", lang) if st.session_state.get("field_photo") else translate("photo_no", lang)
+        
+        st.markdown(f"""
+        <div style="background: #FFFFFF; padding: 24px; border-radius: 16px; border: 2px solid #EBF1EA; box-shadow: 0 4px 16px rgba(0,0,0,0.03); margin-bottom: 24px;">
+            <h4 style="margin: 0 0 16px 0; color: #123E1C; font-weight: 700; border-bottom: 2px solid #F1F6F0; padding-bottom: 8px;">{translate('summary_title', lang)}</h4>
+            <p style="margin: 10px 0; font-size: 1rem; color: #1A301E;"><strong>{translate('summary_loc', lang)}</strong> {params.get('geo_mode')}</p>
+            <p style="margin: 10px 0; font-size: 1rem; color: #1A301E;"><strong>{translate('summary_season', lang)}</strong> {translate('season_' + params.get('season','kharif').lower() + '_title', lang)} ({params.get('year')})</p>
+            <p style="margin: 10px 0; font-size: 1rem; color: #1A301E;"><strong>{translate('summary_crops', lang)}</strong> {crops_str}</p>
+            <p style="margin: 10px 0; font-size: 1rem; color: #1A301E;"><strong>{translate('summary_photo', lang)}</strong> {photo_status}</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Navigation
+        st.markdown("<div style='margin-top: 30px;'></div>", unsafe_allow_html=True)
+        col_prev, col_spacer, col_launch = st.columns([1, 1, 2])
+        with col_prev:
+            if st.button(translate("btn_prev", lang), use_container_width=True, key="prev_step_5"):
+                st.session_state["wizard_step"] = 4
+                st.rerun()
+        with col_launch:
+            if gee_status["gee_initialized"]:
+                launch_clicked = st.button(
+                    translate("btn_run_analysis", lang),
+                    type="primary",
+                    use_container_width=True,
+                )
+            else:
+                st.button(
+                    "🔒 GEE Connection Required" if lang == "en" else "🔒 GEE कनेक्शन आवश्यक है",
+                    type="primary",
+                    use_container_width=True,
+                    disabled=True,
+                )
+                launch_clicked = False
+                
+            if launch_clicked:
+                _run_analysis(params, gee_status)
 
 
 def _run_analysis(params: Dict[str, Any], gee_status: Dict[str, Any]) -> None:
@@ -858,42 +1015,56 @@ def _run_analysis(params: Dict[str, Any], gee_status: Dict[str, Any]) -> None:
         return
     
     progress_placeholder = st.empty()
+    lang = st.session_state.get("lang", "en")
     
-    steps = [
-        ("Fetching Sentinel-2 optical data...", False),
-        ("Processing Sentinel-1 SAR data...", False),
-        ("Fetching ERA5 meteorological data...", False),
-        ("Computing spectral indices (NDVI, EVI, NDWI...)...", False),
-        ("Detecting phenological stages...", False),
-        ("Training crop classifier (XGBoost + RF + LightGBM)...", False),
-        ("Running stress detection (VCI + TCI + VHI + CWSI + SAR)...", False),
-        ("Computing Penman-Monteith ET₀ & water balance...", False),
-        ("Generating irrigation advisory maps...", False),
-        ("Preparing results dashboard...", False),
+    facts_en = [
+        "Healthy crops absorb more infrared light. Satellites use this to measure crop health from space.",
+        "Drip irrigation saves up to 50% more water compared to flood irrigation, while increasing yields.",
+        "Soil moisture is highest in the early morning. Satellite radar can detect moisture changes deep within the root zone.",
+        "Every crop has a unique growing profile. Rice needs more water during transplanting, while wheat needs water during crown root initiation."
     ]
-    
-    with progress_placeholder.container():
-        st.markdown("## 🔄 Running AgroSense AI Pipeline...")
-        st.markdown("All modules are executing. This may take 2–5 minutes for live GEE data.")
-        progress_bar = st.progress(0)
-        status_cols = st.columns(2)
+    facts_hi = [
+        "स्वस्थ फसलें अधिक इन्फ्रारेड प्रकाश को सोखती हैं। सैटेलाइट इसका उपयोग अंतरिक्ष से फसल के स्वास्थ्य को मापने के लिए करते हैं।",
+        "टपकन सिंचाई (Drip Irrigation) क्यारी सिंचाई की तुलना में 50% तक पानी बचाती है और पैदावार बढ़ाती है।",
+        "सुबह के समय मिट्टी में नमी सबसे अधिक होती है। सैटेलाइट राडार जड़ों तक की नमी में बदलाव का पता लगा सकता है।",
+        "हर फसल का एक अलग विकास चक्र होता है। धान को रोपाई के समय अधिक पानी चाहिए, जबकि गेहूं को कल्ला फूटते समय।"
+    ]
+
+    steps = [
+        ("step_s2", "Fetching Sentinel-2 optical data...", False),
+        ("step_s1", "Processing Sentinel-1 SAR data...", False),
+        ("step_era5", "Fetching ERA5 meteorological data...", False),
+        ("step_indices", "Computing spectral indices...", False),
+        ("step_stages", "Detecting phenological stages...", False),
+        ("step_ml", "Training crop classifier (XGBoost + RF + LightGBM)...", False),
+        ("step_stress", "Running stress detection (VCI + TCI + VHI + CWSI + SAR)...", False),
+        ("step_water", "Computing Penman-Monteith ET₀ & water balance...", False),
+        ("step_advisory", "Generating irrigation advisory maps...", False),
+        ("step_done", "Preparing results dashboard...", False),
+    ]
     
     completed_steps = []
     results = None
+    import time
     
     try:
         n = len(steps)
-        
-        for i, (step_name, _) in enumerate(steps):
-            # Update progress
-            progress_pct = (i + 1) / n
-            progress_bar.progress(progress_pct, text=f"Step {i+1}/{n}: {step_name}")
+        for i, (step_key, step_name, _) in enumerate(steps):
+            fact_idx = i % len(facts_en)
+            fact_txt = facts_en[fact_idx] if lang == "en" else facts_hi[fact_idx]
             
-            # Mark previous steps complete
-            completed_steps.append((step_name, True))
+            translated_step = translate(step_key, lang)
+            completed_steps.append((translated_step, True))
             
-            with status_cols[0]:
-                render_progress_bar(completed_steps[-5:])
+            with progress_placeholder.container():
+                render_loading_screen(lang, fact_txt)
+                
+                st.markdown("<div style='max-width: 500px; margin: 20px auto; padding: 10px; background: #FFFFFF; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);'>", unsafe_allow_html=True)
+                for name, is_done in completed_steps[-4:]:
+                    st.markdown(f"<div style='font-size:0.92rem; margin: 4px 0; color: #1B5E20;'>✅ {name}</div>", unsafe_allow_html=True)
+                st.markdown("</div>", unsafe_allow_html=True)
+                
+            time.sleep(0.4)
         
         # Generate results (live GEE or demo mode)
         if gee_status["gee_initialized"]:
@@ -1300,67 +1471,148 @@ def _run_analysis(params: Dict[str, Any], gee_status: Dict[str, Any]) -> None:
 
 def render_results_dashboard(results: Dict[str, Any], params: Dict[str, Any]) -> None:
     """Render the full results dashboard with 6 tabs."""
-    
+    lang = st.session_state.get("lang", "en")
     crops = results.get("crop_classes", params.get("crops", ["wheat"]))
-    source_badge = "🛰️ Live GEE Data"
+    source_badge = translate("source_live_gee", lang)
     
     # Top-level action bar
     col_a, col_b, col_c = st.columns([3, 1, 1])
     with col_a:
         st.markdown(f"""
         <div style="display:flex;align-items:center;gap:12px;padding:8px 0">
-            <span style="font-size:1.3em;font-weight:700;color:#1B5E20">📊 Analysis Results</span>
-            <span style="background:#E8F5E9;color:#2E7D32;padding:4px 12px;border-radius:12px;font-size:0.82em;font-weight:600;border:1px solid #A5D6A7">{source_badge}</span>
+            <span style="font-size:1.6rem;font-weight:800;color:#123E1C;font-family:'Outfit',sans-serif;">{translate('results_dashboard_title', lang)}</span>
+            <span style="background:#E8F5E9;color:#1B5E20;padding:4px 12px;border-radius:20px;font-size:0.82em;font-weight:600;border:1px solid #A5D6A7">{source_badge}</span>
         </div>
         """, unsafe_allow_html=True)
     with col_b:
-        if st.button("🔄 New Analysis", use_container_width=True):
-            del st.session_state["results"]
+        new_analysis_lbl = "🔄 New Analysis" if lang == "en" else "🔄 नया विश्लेषण (New)"
+        if st.button(new_analysis_lbl, use_container_width=True):
+            if "results" in st.session_state:
+                del st.session_state["results"]
             st.rerun()
     with col_c:
         season = results.get("params", {}).get("season", "Kharif")
         year = results.get("params", {}).get("year", 2024)
-        st.markdown(f"**{season} {year}**")
+        translated_season = translate("season_" + season.lower() + "_title", lang).split("(")[0].strip()
+        st.markdown(f"<div style='font-family:\"Outfit\",sans-serif;font-size:1.15rem;font-weight:700;color:#1B5E20;text-align:right;margin-top:10px;'>{translated_season} {year}</div>", unsafe_allow_html=True)
     
     st.markdown("---")
     
+    # Plain language interpretation cards (Farmer First)
+    st.markdown(f"<h3 style='font-family:\"Outfit\",sans-serif;font-weight:800;color:#123E1C;margin: 10px 0 16px 0;'>{translate('interpretation_title', lang)}</h3>", unsafe_allow_html=True)
+    col_plain1, col_plain2, col_plain3 = st.columns(3)
+    
+    pct_severe = results.get("stress_summary", {}).get("pct_severe_stress", 0)
+    pct_mod = results.get("stress_summary", {}).get("pct_moderate_stress", 0)
+    pct_stress = pct_severe + pct_mod
+    
+    if pct_stress < 12:
+        health_status = translate("card_health_status_good", lang)
+        health_color = "#2E7D32"
+    else:
+        health_status = translate("card_health_status_warning", lang)
+        health_color = "#E65100"
+    health_desc = translate("card_health_desc", lang).format(pct=f"{pct_stress:.0f}")
+    
+    total_irr_vol = results.get("total_irr_volume_ML", 0)
+    if pct_severe > 15:
+        water_status = translate("card_water_status_immediate", lang)
+        water_color = "#D32F2F"
+    elif total_irr_vol > 0.0:
+        water_status = translate("card_water_status_soon", lang)
+        water_color = "#F57F17"
+    else:
+        water_status = translate("card_water_status_ok", lang)
+        water_color = "#2E7D32"
+        
+    wris_name = params.get("wris_data", {}).get("name", "Study Area") if params.get("geo_mode") == "Select Command Area (WRIS)" else "Custom Area"
+    water_desc = translate("card_water_desc", lang).format(area=f"{results.get('total_area_ha', 0):.0f}")
+    
+    weather_status = translate("card_weather_status_dry", lang)
+    weather_desc = translate("card_weather_desc", lang)
+    
+    with col_plain1:
+        st.markdown(f"""
+        <div style="background:#FFFFFF; padding:22px; border-radius:16px; border:1px solid #EBF1EA; box-shadow:0 4px 16px rgba(110,130,110,0.06); height:200px;">
+            <h4 style="margin:0 0 6px 0; color:#1A301E; font-size:1.1rem; font-weight:700;">{translate('card_health_title', lang)}</h4>
+            <div style="color:{health_color}; font-weight:800; font-size:1.35rem; margin-bottom:10px; font-family:'Outfit',sans-serif;">{health_status}</div>
+            <p style="margin:0; font-size:0.92rem; color:#5C7060; line-height:1.45;">{health_desc}</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    with col_plain2:
+        st.markdown(f"""
+        <div style="background:#FFFFFF; padding:22px; border-radius:16px; border:1px solid #EBF1EA; box-shadow:0 4px 16px rgba(110,130,110,0.06); height:200px;">
+            <h4 style="margin:0 0 6px 0; color:#1A301E; font-size:1.1rem; font-weight:700;">{translate('card_water_title', lang)}</h4>
+            <div style="color:{water_color}; font-weight:800; font-size:1.35rem; margin-bottom:10px; font-family:'Outfit',sans-serif;">{water_status}</div>
+            <p style="margin:0; font-size:0.92rem; color:#5C7060; line-height:1.45;">{water_desc}</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    with col_plain3:
+        st.markdown(f"""
+        <div style="background:#FFFFFF; padding:22px; border-radius:16px; border:1px solid #EBF1EA; box-shadow:0 4px 16px rgba(110,130,110,0.06); height:200px;">
+            <h4 style="margin:0 0 6px 0; color:#1A301E; font-size:1.1rem; font-weight:700;">{translate('card_weather_title', lang)}</h4>
+            <div style="color:#0277BD; font-weight:800; font-size:1.35rem; margin-bottom:10px; font-family:'Outfit',sans-serif;">{weather_status}</div>
+            <p style="margin:0; font-size:0.92rem; color:#5C7060; line-height:1.45;">{weather_desc}</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Actionable Alerts Banner (Farmer first)
+    if pct_severe > 15:
+        render_farmer_alert("danger", translate("alert_critical", lang).format(area=f"{results.get('total_area_ha',0):.0f}"), "Fields are showing signs of severe water stress. Immediate action required." if lang == "en" else "फसलों में पानी की भारी कमी देखी गई है। पैदावार को बचाने के लिए तुरंत सिंचाई करें।")
+    elif total_irr_vol > 0:
+        render_farmer_alert("warning", translate("alert_warning", lang).format(area=f"{results.get('total_area_ha',0):.0f}"), "Monitor fields closely. Plan irrigation within 3 days." if lang == "en" else "खेतों पर नजर रखें। टाइम टेबल के अनुसार 3 दिनों में सिंचाई करें।")
+    else:
+        render_farmer_alert("success", translate("alert_success", lang), "All fields are well watered. Vigor level is optimal." if lang == "en" else "सभी खेतों में भरपूर नमी है। इस हफ्ते सिंचाई की आवश्यकता नहीं है।")
+
     # KPI cards
     st.markdown('<div class="metric-grid">', unsafe_allow_html=True)
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         render_metric_card(
-            "Total Area", f"{results.get('total_area_ha', 0):.0f}", "ha",
-            "#2E7D32", "🌾", "Study region analyzed"
+            translate("metric_area_title", lang),
+            f"{results.get('total_area_ha', 0):.0f}",
+            translate("metric_area_unit", lang),
+            "#2E7D32", "🌾",
+            "Study region analyzed" if lang == "en" else "कुल विश्लेषित क्षेत्र"
         )
     with col2:
         render_metric_card(
-            "Irrigation Need", f"{results.get('total_irr_volume_ML', 0):.1f}", "ML",
-            "#0091EA", "💧", f"Next {results.get('period_days', 8)} days"
+            translate("metric_irr_title", lang),
+            f"{results.get('total_irr_volume_ML', 0):.1f}", "ML",
+            "#0091EA", "💧",
+            translate("metric_irr_sub", lang)
         )
     with col3:
-        pct_stress = results.get("stress_summary", {}).get("pct_severe_stress", 0)
+        stress_text = translate("metric_stress_sub", lang).format(severe=f"{pct_severe:.0f}", mild=f"{pct_mod:.0f}")
         render_metric_card(
-            "Severe Stress", f"{pct_stress:.1f}", "%",
-            "#D50000" if pct_stress > 20 else "#FF8F00", "🔴",
-            "Area under severe stress"
+            translate("metric_stress_title", lang),
+            f"{pct_severe:.1f}", "%",
+            "#D50000" if pct_severe > 20 else "#FF8F00", "🔴",
+            stress_text
         )
     with col4:
         render_metric_card(
-            "Reference ET₀", f"{results.get('mean_et0', 0):.1f}", "mm/day",
-            "#FF8F00", "☀️", "Penman-Monteith"
+            "Reference ET₀" if lang == "en" else "वाष्पीकरण दर (ET₀)",
+            f"{results.get('mean_et0', 0):.1f}", "mm/day",
+            "#FF8F00", "☀️",
+            "Penman-Monteith" if lang == "en" else "पेनमैन-मोंटीथ विधि"
         )
     st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Main tabs
+    # Main tabs (Bilingual names)
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-        "🌍 Overview Map",
-        "🌾 Crop Analysis",
-        "🔴 Stress Analysis",
-        "💧 Irrigation Advisory",
-        "✅ Validation",
-        "📤 Export",
+        translate("tab_overview", lang),
+        translate("tab_crop", lang),
+        translate("tab_stress", lang),
+        translate("tab_water", lang),
+        translate("tab_accuracy", lang),
+        translate("tab_download", lang),
     ])
     
     # ── TAB 1: OVERVIEW MAP ─────────────────────────────────────────────
@@ -1387,16 +1639,61 @@ def render_results_dashboard(results: Dict[str, Any], params: Dict[str, Any]) ->
     with tab6:
         render_export_tab(results, params)
 
+    # ── MOCK AI VOICE QUERY ─────────────────────────────────────────────
+    st.markdown("---")
+    st.markdown(f"<h3 style='font-family:\"Outfit\",sans-serif;font-weight:800;color:#123E1C;'>{translate('voice_section_title', lang)}</h3>", unsafe_allow_html=True)
+    
+    col_v1, col_v2 = st.columns([3, 1])
+    with col_v1:
+        user_q = st.text_input(
+            "Ask question" if lang == "en" else "सवाल पूछें",
+            placeholder=translate("voice_placeholder", lang),
+            label_visibility="collapsed"
+        )
+    with col_v2:
+        ask_clicked = st.button(translate("btn_text", lang), use_container_width=True)
+        
+    if ask_clicked and user_q:
+        q_lower = user_q.lower()
+        if "wheat" in q_lower or "पीला" in q_lower or "yellow" in q_lower:
+            answer = "Wheat leaves turning yellow could be due to nitrogen deficiency or waterlogging. Since our satellite detected adequate soil moisture, we recommend applying urea (nitrogen fertilizer) before the next irrigation cycle." if lang == "en" else "गेहूं की पत्तियां पीली पड़ने का कारण नाइट्रोजन की कमी या जलभराव हो सकता है। चूंकि हमारे सैटेलाइट ने मिट्टी में पर्याप्त नमी दर्ज की है, हम सलाह देते हैं कि अगली सिंचाई से पहले यूरिया (नाइट्रोजन खाद) डालें।"
+        elif "water" in q_lower or "irrigate" in q_lower or "सिंचाई" in q_lower or "पानी" in q_lower:
+            answer = f"The crop water stress index is moderate. You need to irrigate approximately {results.get('total_irr_volume_ML', 0):.1f} ML over the next few days. Please check the zone-wise schedule tab for details." if lang == "en" else f"फसल का जल तनाव मध्यम स्तर पर है। आपको अगले कुछ दिनों में लगभग {results.get('total_irr_volume_ML', 0):.1f} ML पानी देने की आवश्यकता है। कृपया विस्तृत समय सारिणी के लिए जोन-वार शेड्यूल देखें।"
+        else:
+            answer = "Based on Sentinel-2 satellite signatures, your crop vigor index (NDVI) is at 0.72. The crop is currently in the vegetative growth stage and is healthy. Please proceed with irrigation as per the scheduled advisory." if lang == "en" else "सेंटिनल-2 सैटेलाइट डेटा के अनुसार, आपकी फसल का हरियाली लेवल (NDVI) 0.72 है। फसल बढ़ रही है और पूरी तरह स्वस्थ है। कृपया हमारे सिंचाई टाइम टेबल के अनुसार पानी दें।"
+            
+        st.markdown(f"""
+        <div style="background:#F1F8E9; border-left: 5px solid #2E7D32; padding: 16px; border-radius: 12px; margin-top: 14px;">
+            <strong style="color:#1B5E20; display:block; margin-bottom:4px;">{translate('answer_header', lang)}</strong>
+            <p style="margin:0; font-size:1.02rem; color:#1A301E; font-weight: 500;">{answer}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+
 
 # ── Tab renderers ────────────────────────────────────────────────────────────
 
 def render_overview_tab(results: Dict[str, Any], crops: List[str]) -> None:
     """Render overview map tab."""
+    lang = st.session_state.get("lang", "en")
     
     # Layer selector
-    st.markdown("### 🗺️ Interactive Analysis Map")
-    layer_options = ["Crop Type", "Moisture Stress", "Irrigation Advisory", "Water Deficit", "NDVI"]
-    active_layer = st.selectbox("Active Map Layer", layer_options, index=0)
+    st.markdown("### 🗺️ Interactive Analysis Map" if lang == "en" else "### 🗺️ खेतों का नक्शा (Interactive Map)")
+    
+    layer_mapping = {
+        translate("layer_crop", lang): "Crop Type",
+        translate("layer_stress", lang): "Moisture Stress",
+        translate("layer_irr", lang): "Irrigation Advisory",
+        translate("layer_deficit", lang): "Water Deficit",
+        translate("layer_ndvi", lang): "NDVI"
+    }
+    
+    active_layer_disp = st.selectbox(
+        "Active Map Layer" if lang == "en" else "नक्शे का लेयर चुनें",
+        list(layer_mapping.keys()),
+        index=0
+    )
+    active_layer = layer_mapping[active_layer_disp]
     
     # Map info
     col_map, col_info = st.columns([2, 1])
@@ -1442,7 +1739,7 @@ def render_overview_tab(results: Dict[str, Any], crops: List[str]) -> None:
             st.warning("Install streamlit-folium to view maps: `pip install streamlit-folium`")
     
     with col_info:
-        st.markdown("### 🎯 Area Summary")
+        st.markdown("### 🎯 Area Summary" if lang == "en" else "### 🎯 क्षेत्र सारांश (Summary)")
         summary = results.get("stress_summary", {})
         
         def make_progress_row(label: str, pct: float, color: str) -> str:
@@ -1456,30 +1753,43 @@ def render_overview_tab(results: Dict[str, Any], crops: List[str]) -> None:
                 </div>
             </div>"""
         
-        st.markdown("**Stress Distribution:**")
+        st.markdown("**Stress Distribution:**" if lang == "en" else "**खेतों में पानी का तनाव:**")
         st.markdown(
-            make_progress_row("No Stress", summary.get("pct_no_stress", 0), "#00C853") +
-            make_progress_row("Mild Stress", summary.get("pct_mild_stress", 0), "#FFD600") +
-            make_progress_row("Moderate Stress", summary.get("pct_moderate_stress", 0), "#FF6D00") +
-            make_progress_row("Severe Stress", summary.get("pct_severe_stress", 0), "#D50000"),
+            make_progress_row(translate("legend_healthy", lang), summary.get("pct_no_stress", 0), "#00C853") +
+            make_progress_row(translate("legend_mild", lang), summary.get("pct_mild_stress", 0), "#FFD600") +
+            make_progress_row(translate("legend_mod", lang), summary.get("pct_moderate_stress", 0), "#FF6D00") +
+            make_progress_row(translate("legend_severe", lang), summary.get("pct_severe_stress", 0), "#D50000"),
             unsafe_allow_html=True,
         )
         
         st.markdown("---")
-        st.markdown("**Growth Stages:**")
+        st.markdown("**Growth Stages:**" if lang == "en" else "**फसलों की बढ़त स्थिति (Stages):**")
         stage_dist = results.get("stage_distribution", {})
+        
+        stage_translations = {
+            "pre_sowing": "Pre-sowing" if lang == "en" else "बुआई से पहले",
+            "establishment": "Establishment" if lang == "en" else "अंकुरण/शुरुआत",
+            "vegetative": "Vegetative" if lang == "en" else "वानस्पतिक (बढ़ना)",
+            "reproductive": "Reproductive" if lang == "en" else "प्रजनन (फूल/बालियां)",
+            "grain_fill": "Grain Fill" if lang == "en" else "दाना भरना",
+            "maturity": "Maturity" if lang == "en" else "फसल पकाव"
+        }
+        
         for stage_name, pct in stage_dist.items():
             if pct > 0:
+                stage_key = stage_name.lower().strip()
+                translated_stage_name = stage_translations.get(stage_key, stage_name.replace("_", " ").title())
                 st.markdown(
-                    make_progress_row(stage_name.replace("_", " ").title(), pct, "#4CAF50"),
+                    make_progress_row(translated_stage_name, pct, "#4CAF50"),
                     unsafe_allow_html=True,
                 )
 
 
 def render_crop_tab(results: Dict[str, Any], crops: List[str]) -> None:
     """Render crop analysis tab."""
+    lang = st.session_state.get("lang", "en")
     
-    st.markdown("### 🌾 Crop Type Analysis")
+    st.markdown("### 🌾 Crop Type Analysis" if lang == "en" else "### 🌾 फसल प्रकार विश्लेषण (Crop Type)")
     
     col1, col2 = st.columns([1, 1])
     
@@ -1495,12 +1805,12 @@ def render_crop_tab(results: Dict[str, Any], crops: List[str]) -> None:
     
     with col2:
         # Crop advisory summary table
-        st.markdown("**📋 Crop-Wise Advisory Summary**")
+        st.markdown("**📋 Crop-Wise Advisory Summary**" if lang == "en" else "**📋 फसल-वार सिंचाई सलाह सारांश**")
         render_advisory_summary_table(crop_summary)
     
     # NDVI time series
     st.markdown("---")
-    st.markdown("### 📈 NDVI Phenological Time Series")
+    st.markdown("### 📈 NDVI Phenological Time Series" if lang == "en" else "### 📈 फसल चक्र हरियाली ग्राफ (NDVI Timeline)")
     
     date_list = results.get("date_list", [])
     ndvi_raw = results.get("ndvi_mean_per_date", [])
@@ -1511,6 +1821,9 @@ def render_crop_tab(results: Dict[str, Any], crops: List[str]) -> None:
         sos_idx = max(0, peak_idx - len(date_list) // 3)
         eos_idx = min(len(date_list) - 1, peak_idx + len(date_list) // 3)
         
+        translated_crops = [translate_crop(c, lang) for c in crops[:3]]
+        crop_lbl_translated = f"Study Area ({', '.join(translated_crops)})" if lang == "en" else f"विश्लेषित क्षेत्र ({', '.join(translated_crops)})"
+        
         fig_ts = plot_ndvi_timeseries(
             dates=date_list,
             ndvi_values=ndvi_raw,
@@ -1518,7 +1831,7 @@ def render_crop_tab(results: Dict[str, Any], crops: List[str]) -> None:
             sos_date=date_list[sos_idx] if sos_idx < len(date_list) else None,
             peak_date=date_list[peak_idx] if peak_idx < len(date_list) else None,
             eos_date=date_list[eos_idx] if eos_idx < len(date_list) else None,
-            crop_label=f"Study Area ({', '.join(crops[:3])})",
+            crop_label=crop_lbl_translated,
         )
         st.plotly_chart(fig_ts, use_container_width=True)
     
@@ -1535,8 +1848,9 @@ def render_crop_tab(results: Dict[str, Any], crops: List[str]) -> None:
 
 def render_stress_tab(results: Dict[str, Any]) -> None:
     """Render stress analysis tab."""
+    lang = st.session_state.get("lang", "en")
     
-    st.markdown("### 🔴 Multi-Source Moisture Stress Analysis")
+    st.markdown("### 🔴 Multi-Source Moisture Stress Analysis" if lang == "en" else "### 🔴 बहु-स्रोत नमी तनाव विश्लेषण (Moisture Stress)")
     
     # Three-panel layout
     col_left, col_center, col_right = st.columns([1, 1, 1])
@@ -1544,16 +1858,24 @@ def render_stress_tab(results: Dict[str, Any]) -> None:
     stress_summary = results.get("stress_summary", {})
     
     with col_left:
-        st.markdown("**Current Stress Map**")
+        st.markdown("**Current Stress Map**" if lang == "en" else "**वर्तमान तनाव स्तर (Stress Map)**")
         stress_class = results.get("stress_class")
         if stress_class is not None:
             import matplotlib.pyplot as plt
             import matplotlib.colors as mcolors
             fig_stress, ax = plt.subplots(figsize=(4, 4))
+            fig_stress.patch.set_facecolor('#f9fbf7')
+            ax.set_facecolor('#f9fbf7')
             cmap = mcolors.ListedColormap(["#00C853", "#FFD600", "#FF6D00", "#D50000"])
             im = ax.imshow(stress_class, cmap=cmap, vmin=0, vmax=3, aspect="auto")
-            plt.colorbar(im, ax=ax, ticks=[0, 1, 2, 3], label="Stress Class")
-            ax.set_title("Stress Classification", fontsize=10, fontweight="bold")
+            
+            colorbar_label = "Stress Class" if lang == "en" else "तनाव की श्रेणी"
+            cb = plt.colorbar(im, ax=ax, ticks=[0, 1, 2, 3], label=colorbar_label)
+            tick_labels = ["No Stress", "Mild", "Mod", "Severe"] if lang == "en" else ["स्वस्थ", "हल्का", "मध्यम", "गंभीर"]
+            cb.set_ticklabels(tick_labels)
+            
+            title_text = "Stress Classification" if lang == "en" else "तनाव वर्गीकरण"
+            ax.set_title(title_text, fontsize=10, fontweight="bold")
             ax.axis("off")
             st.pyplot(fig_stress, use_container_width=True)
             plt.close()
@@ -1588,7 +1910,14 @@ def render_stress_tab(results: Dict[str, Any]) -> None:
     
     # Index comparison table
     st.markdown("---")
-    st.markdown("### 📊 Stress Index Summary")
+    st.markdown("### 📊 Stress Index Summary" if lang == "en" else "### 📊 मुख्य सूचकांक सारांश (Stress Index)")
+    
+    idx_cols = {
+        "Index": "सूचकांक (Index)" if lang == "hi" else "Index",
+        "Current Value": "वर्तमान मान (Current Value)" if lang == "hi" else "Current Value",
+        "Scale": "पैमाना (Scale)" if lang == "hi" else "Scale",
+        "Interpretation": "व्याख्या (Interpretation)" if lang == "hi" else "Interpretation",
+    }
     
     idx_data = {
         "Index": ["VCI", "TCI", "VHI", "CWSI", "SAR-SMI", "Combined Score"],
@@ -1602,29 +1931,37 @@ def render_stress_tab(results: Dict[str, Any]) -> None:
         ],
         "Scale": ["0–100", "0–100", "0–100", "0–1", "0–100", "0–100"],
         "Interpretation": [
-            "100 = best vegetation condition",
-            "100 = coolest (no heat stress)",
-            "< 40 stressed, < 25 severe",
-            "0 = no stress, 1 = wilted",
-            "100 = wettest",
-            "PC1 of all indices",
+            "100 = best vegetation condition" if lang == "en" else "100 = सबसे हरी-भरी फसल",
+            "100 = coolest (no heat stress)" if lang == "en" else "100 = ठंडा (तापमान का तनाव नहीं)",
+            "< 40 stressed, < 25 severe" if lang == "en" else "< 40 तनाव, < 25 गंभीर तनाव",
+            "0 = no stress, 1 = wilted" if lang == "en" else "0 = तनाव नहीं, 1 = मुरझाई फसल",
+            "100 = wettest" if lang == "en" else "100 = सबसे ज़्यादा नमी",
+            "PC1 of all indices" if lang == "en" else "सभी सूचकांकों का मिला-जुला स्कोर",
         ],
     }
-    st.dataframe(pd.DataFrame(idx_data), use_container_width=True)
+    df_idx = pd.DataFrame(idx_data)
+    df_idx.rename(columns=idx_cols, inplace=True)
+    st.dataframe(df_idx, use_container_width=True)
 
 
 def render_advisory_tab(results: Dict[str, Any], crops: List[str]) -> None:
     """Render irrigation advisory tab."""
+    lang = st.session_state.get("lang", "en")
     
-    st.markdown("### 💧 8-Day Irrigation Advisory")
+    st.markdown("### 💧 8-Day Irrigation Advisory" if lang == "en" else "### 💧 अगले 8 दिनों के लिए सिंचाई सलाह")
     
     # Advisory legend
-    st.markdown("""
+    chip_no = translate("legend_no_irr", lang)
+    chip_soon = translate("legend_soon_irr", lang)
+    chip_now = translate("legend_now_irr", lang)
+    chip_crit = "Critical Alert" if lang == "en" else "अत्यंत गंभीर"
+    
+    st.markdown(f"""
     <div class="advisory-legend">
-        <div class="advisory-chip" style="background:#E8F5E9;color:#1B5E20;border:1px solid #81C784">✅ No Irrigation</div>
-        <div class="advisory-chip" style="background:#FFF8E1;color:#F57F17;border:1px solid #FFD54F">⚠️ Irrigate in 3 Days</div>
-        <div class="advisory-chip" style="background:#FFF3E0;color:#E65100;border:1px solid #FFCC80">🔴 Irrigate Now!</div>
-        <div class="advisory-chip" style="background:#FFEBEE;color:#B71C1C;border:1px solid #EF9A9A">🚨 Critical Alert</div>
+        <div class="advisory-chip" style="background:#E8F5E9;color:#1B5E20;border:1px solid #81C784">✅ {chip_no}</div>
+        <div class="advisory-chip" style="background:#FFF8E1;color:#F57F17;border:1px solid #FFD54F">⚠️ {chip_soon}</div>
+        <div class="advisory-chip" style="background:#FFF3E0;color:#E65100;border:1px solid #FFCC80">🔴 {chip_now}</div>
+        <div class="advisory-chip" style="background:#FFEBEE;color:#B71C1C;border:1px solid #EF9A9A">🚨 {chip_crit}</div>
     </div>
     """, unsafe_allow_html=True)
     
@@ -1641,31 +1978,47 @@ def render_advisory_tab(results: Dict[str, Any], crops: List[str]) -> None:
             st.plotly_chart(fig_irr, use_container_width=True)
     
     with col2:
-        st.markdown("**📋 Priority Advisory Table**")
+        st.markdown("**📋 Priority Advisory Table**" if lang == "en" else "**📋 मुख्य सिंचाई प्राथमिकता टेबल**")
         render_advisory_summary_table(crop_summary)
         
         st.markdown("---")
         # Key metrics
         total_irr = results.get("total_irr_volume_ML", 0)
+        total_irr_title = "Total Irrigation Requirement" if lang == "en" else "कुल आवश्यक पानी की मात्रा"
+        total_irr_unit = "Mega-Litres" if lang == "en" else "मेगा-लीटर (ML)"
+        total_irr_sub = f"For the next {results.get('period_days', 8)} days across the study area" if lang == "en" else f"विश्लेषित क्षेत्र में अगले {results.get('period_days', 8)} दिनों के लिए आवश्यक कुल पानी"
         st.markdown(f"""
         <div style="background:linear-gradient(135deg,#E3F2FD,#BBDEFB);
              padding:16px;border-radius:12px;border-left:5px solid #1565C0">
-            <div style="font-size:1.1em;font-weight:700;color:#0D47A1">Total Irrigation Requirement</div>
+            <div style="font-size:1.1em;font-weight:700;color:#0D47A1">{total_irr_title}</div>
             <div style="font-size:2em;font-weight:800;color:#1565C0;margin-top:4px">
-                {total_irr:.2f} <span style="font-size:0.5em">Mega-Litres</span>
+                {total_irr:.2f} <span style="font-size:0.5em">{total_irr_unit}</span>
             </div>
             <div style="font-size:0.82em;color:#555;margin-top:4px">
-                For the next {results.get('period_days', 8)} days across the study area
+                {total_irr_sub}
             </div>
         </div>
         """, unsafe_allow_html=True)
     
     # Water balance details
     st.markdown("---")
-    st.markdown("### 🌊 Water Balance Components")
+    st.markdown("### 🌊 Water Balance Components" if lang == "en" else "### 🌊 जल संतुलन घटक (Water Balance)")
+    
+    wb_cols = {
+        "Component": "घटक (Component)" if lang == "hi" else "Component",
+        "Mean Value (mm/8d)": "औसत मान (Mean Value - mm/8d)" if lang == "hi" else "Mean Value (mm/8d)",
+        "Source": "डेटा का स्रोत (Source)" if lang == "hi" else "Source",
+    }
     
     wb_data = {
-        "Component": ["ET₀ (Penman-Monteith)", "ETc (Crop ET)", "CHIRPS Rainfall", "Runoff", "Soil Depletion", "Irrigation Need"],
+        "Component": [
+            "ET₀ (Penman-Monteith)" if lang == "en" else "वाष्पीकरण दर (ET₀ - Penman-Monteith)",
+            "ETc (Crop ET)" if lang == "en" else "फसल वाष्पीकरण दर (ETc - Crop ET)",
+            "CHIRPS Rainfall" if lang == "en" else "बारिश (CHIRPS Rainfall)",
+            "Runoff" if lang == "en" else "अपवाह (Runoff - बह गया पानी)",
+            "Soil Depletion" if lang == "en" else "मिट्टी में पानी की कमी (Soil Depletion)",
+            "Irrigation Need" if lang == "en" else "सिंचाई की आवश्यकता (Irrigation Need)"
+        ],
         "Mean Value (mm/8d)": [
             f"{np.nanmean(results.get('et0_daily', [4.5])) * 8:.1f}",
             f"{np.nanmean(results.get('etc_period', [30])):.1f}",
@@ -1675,31 +2028,40 @@ def render_advisory_tab(results: Dict[str, Any], crops: List[str]) -> None:
             f"{np.nanmean(results.get('irr_need_mm', [10])):.1f}",
         ],
         "Source": [
-            "ERA5 (computed)", "FAO-56 Kc × ET₀", "CHIRPS 5.5km", "Slope (SRTM)", "Daily balance", "Dr - RAW",
+            "ERA5 (computed)" if lang == "en" else "ERA5 (मौसम मॉडल)",
+            "FAO-56 Kc × ET₀" if lang == "en" else "FAO-56 फसल गुणांक × ET₀",
+            "CHIRPS 5.5km" if lang == "en" else "CHIRPS सैटेलाइट (5.5 किमी)",
+            "Slope (SRTM)" if lang == "en" else "SRTM ढलान मॉडल",
+            "Daily balance" if lang == "en" else "दैनिक गणना (Daily Balance)",
+            "Dr - RAW" if lang == "en" else "नमी माप (Dr - RAW)",
         ],
     }
-    st.dataframe(pd.DataFrame(wb_data), use_container_width=True)
+    df_wb = pd.DataFrame(wb_data)
+    df_wb.rename(columns=wb_cols, inplace=True)
+    st.dataframe(df_wb, use_container_width=True)
 
 
 def render_validation_tab(results: Dict[str, Any]) -> None:
     """Render validation tab."""
-    st.markdown("### ✅ Accuracy & Validation Metrics")
+    lang = st.session_state.get("lang", "en")
+    
+    st.markdown("### ✅ Accuracy & Validation Metrics" if lang == "en" else "### ✅ मॉडल की शुद्धता और जांच (Accuracy & Validation)")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("#### 📊 ML Crop Classifier Stacking Ensemble")
-        st.markdown("The classifier Stacked Ensemble model was trained dynamically on optical/SAR signatures.")
+        st.markdown("#### 📊 ML Crop Classifier Stacking Ensemble" if lang == "en" else "#### 📊 फसल पहचान मॉडल (ML Classifier)")
+        st.markdown("The classifier Stacked Ensemble model was trained dynamically on optical/SAR signatures." if lang == "en" else "यह मॉडल सैटेलाइट (कलर और राडार) किरणों के विश्लेषण से फसलों की पहचान करता है।")
         if "confusion_matrix" in results and results["confusion_matrix"] is not None:
-            st.markdown("**Confusion Matrix**")
+            st.markdown("**Confusion Matrix**" if lang == "en" else "**वर्गीकरण शुद्धता मैट्रिक्स (Confusion Matrix)**")
             fig_cm = plot_confusion_matrix(results["confusion_matrix"], results["crop_classes"])
             st.plotly_chart(fig_cm, use_container_width=True)
         else:
-            st.info("No confusion matrix available.")
+            st.info("No confusion matrix available." if lang == "en" else "कोई मैट्रिक्स उपलब्ध नहीं है।")
     
     with col2:
         if "shap_features" in results and results["shap_features"]:
-            st.markdown("#### 📊 ML Feature Importance (SHAP)")
+            st.markdown("#### 📊 ML Feature Importance (SHAP)" if lang == "en" else "#### 📊 मुख्य प्रभावित करने वाले कारक (AI Importance)")
             fig_shap = plot_shap_importance(results["shap_features"], results["shap_values"], top_n=10)
             st.plotly_chart(fig_shap, use_container_width=True)
         else:
@@ -1708,9 +2070,20 @@ def render_validation_tab(results: Dict[str, Any]) -> None:
             cwsi = results.get("cwsi")
             if vhi is not None and cwsi is not None:
                 stress_cv = cross_validate_stress(vhi, cwsi)
-                st.markdown("**Stress Index Agreement (VHI vs CWSI)**")
+                st.markdown("**Stress Index Agreement (VHI vs CWSI)**" if lang == "en" else "**तनाव सूचकांकों का मिलान (VHI बनाम CWSI)**")
+                
+                cv_cols = {
+                    "Metric": "पैमाना (Metric)" if lang == "hi" else "Metric",
+                    "Percentage": "समानता प्रतिशत (Percentage)" if lang == "hi" else "Percentage",
+                }
+                
                 cv_df = pd.DataFrame({
-                    "Metric": ["High Confidence", "Uncertain", "Both Stressed", "Both Unstressed"],
+                    "Metric": [
+                        "High Confidence" if lang == "en" else "उच्च विश्वसनीयता (दोनों सहमत)",
+                        "Uncertain" if lang == "en" else "संदेहास्पद (असहमत)",
+                        "Both Stressed" if lang == "en" else "दोनों के अनुसार सूखा तनाव",
+                        "Both Unstressed" if lang == "en" else "दोनों के अनुसार पर्याप्त नमी"
+                    ],
                     "Percentage": [
                         f"{stress_cv['pct_high_confidence']:.1f}%",
                         f"{stress_cv['pct_uncertain']:.1f}%",
@@ -1718,11 +2091,12 @@ def render_validation_tab(results: Dict[str, Any]) -> None:
                         f"{stress_cv['pct_both_unstressed']:.1f}%",
                     ],
                 })
+                cv_df.rename(columns=cv_cols, inplace=True)
                 st.dataframe(cv_df, use_container_width=True)
     
     # Data quality report
     st.markdown("---")
-    st.markdown("### 📡 Data Quality Report")
+    st.markdown("### 📡 Data Quality Report" if lang == "en" else "### 📡 सैटेलाइट डेटा की गुणवत्ता रिपोर्ट (Data Quality)")
     n_t = results.get("n_timesteps", 12)
     start_dt = pd.Timestamp("2024-06-01")
     date_list = results.get("date_list", [(start_dt + pd.Timedelta(days=i * 15)).strftime("%Y-%m-%d") for i in range(n_t)])
@@ -1737,60 +2111,112 @@ def render_validation_tab(results: Dict[str, Any]) -> None:
         coverage_pct=coverage_pct,
     )
     
-    st.markdown(f"""
-    **Overall Rating:** {dq_report['overall_rating']} | 
-    **Coverage:** {dq_report['coverage_pct']:.1f}% good periods | 
-    **Good:** {dq_report['n_good']} | **Low:** {dq_report['n_low']} | **Missing:** {dq_report['n_missing']}
-    """)
-    st.dataframe(dq_report["period_quality"], use_container_width=True, height=250)
+    rating_translations = {
+        "Excellent": "उत्कृष्ट (Excellent) ⭐⭐⭐⭐",
+        "Good": "अच्छा (Good) ⭐⭐⭐",
+        "Fair": "साधारण (Fair) ⭐⭐",
+        "Poor": "कमज़ोर (Poor) ⭐"
+    }
+    overall_rating = rating_translations.get(dq_report['overall_rating'], dq_report['overall_rating'])
+    
+    if lang == "en":
+        st.markdown(f"""
+        **Overall Rating:** {dq_report['overall_rating']} | 
+        **Coverage:** {dq_report['coverage_pct']:.1f}% good periods | 
+        **Good:** {dq_report['n_good']} | **Low:** {dq_report['n_low']} | **Missing:** {dq_report['n_missing']}
+        """)
+    else:
+        st.markdown(f"""
+        **कुल गुणवत्ता रेटिंग:** {overall_rating} | 
+        **कवरेज:** {dq_report['coverage_pct']:.1f}% अच्छा डेटा | 
+        **सटीक अवधि:** {dq_report['n_good']} | **कम डेटा अवधि:** {dq_report['n_low']} | **अनुपस्थित अवधि:** {dq_report['n_missing']}
+        """)
+    
+    df_dq = dq_report["period_quality"].copy()
+    if lang == "hi":
+        dq_cols = {
+            "Period": "अवधि (Period)",
+            "Scenes": "सैटेलाइट तस्वीरें (Scenes)",
+            "Quality": "गुणवत्ता (Quality)",
+            "Status": "स्थिति (Status)"
+        }
+        df_dq.rename(columns=dq_cols, inplace=True)
+        df_dq[dq_cols["Quality"]] = df_dq[dq_cols["Quality"]].replace({
+            "Good": "सटीक (Good)",
+            "Low Data": "कम डेटा (Low)",
+            "No Data": "अनुपस्थित (No Data)"
+        })
+    st.dataframe(df_dq, use_container_width=True, height=250)
 
 
 def render_export_tab(results: Dict[str, Any], params: Dict[str, Any]) -> None:
     """Render export tab."""
+    lang = st.session_state.get("lang", "en")
     
-    st.markdown("### 📤 Download Results")
+    st.markdown("### 📤 Download Results" if lang == "en" else "### 📤 रिपोर्ट और डेटा डाउनलोड करें (Download)")
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.markdown("""
-        <div style="background:linear-gradient(135deg,#E8F5E9,#F1F8E9);padding:20px;border-radius:12px;
-             border:1px solid #A5D6A7;text-align:center">
-            <div style="font-size:2.5em;margin-bottom:8px">🗺️</div>
-            <div style="font-weight:700;color:#2E7D32;margin-bottom:8px">GeoTIFF Package</div>
-            <div style="font-size:0.82em;color:#555">All spatial layers as LZW-compressed GeoTIFFs</div>
-        </div>
-        """, unsafe_allow_html=True)
+        if lang == "en":
+            st.markdown("""
+            <div style="background:linear-gradient(135deg,#E8F5E9,#F1F8E9);padding:20px;border-radius:12px;
+                 border:1px solid #A5D6A7;text-align:center">
+                <div style="font-size:2.5em;margin-bottom:8px">🗺️</div>
+                <div style="font-weight:700;color:#2E7D32;margin-bottom:8px">GeoTIFF Package</div>
+                <div style="font-size:0.82em;color:#555">All spatial layers as LZW-compressed GeoTIFFs</div>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div style="background:linear-gradient(135deg,#E8F5E9,#F1F8E9);padding:20px;border-radius:12px;
+                 border:1px solid #A5D6A7;text-align:center">
+                <div style="font-size:2.5em;margin-bottom:8px">🗺️</div>
+                <div style="font-weight:700;color:#2E7D32;margin-bottom:8px">नक्शा फाइलें (GeoTIFF)</div>
+                <div style="font-size:0.82em;color:#555">नक्शों की डिजिटल GIS फाइलें (.zip)</div>
+            </div>
+            """, unsafe_allow_html=True)
         
-        if st.button("⬇️ Download GeoTIFFs (.zip)", use_container_width=True):
+        btn_zip_lbl = "⬇️ Download GeoTIFFs (.zip)" if lang == "en" else "⬇️ नक्शा फाइलें (.zip) डाउनलोड करें"
+        if st.button(btn_zip_lbl, use_container_width=True):
             try:
                 H = W = results.get("grid_size", 20)
                 bounds = [[22.4, 78.9], [22.6, 79.1]]
                 zip_bytes = export_all_geotiffs_zip(results, bounds)
                 st.download_button(
-                    label="📦 Save ZIP",
+                    label="📦 Save ZIP" if lang == "en" else "📦 ज़िप फाइल सुरक्षित करें",
                     data=zip_bytes,
                     file_name=f"agrosense_geotiffs_{params.get('season','')}{params.get('year','')}.zip",
                     mime="application/zip",
                 )
             except Exception as exc:
-                st.error(f"GeoTIFF export failed: {exc}")
+                st.error(f"GeoTIFF export failed: {exc}" if lang == "en" else f"नक्शा फाइल डाउनलोड असफल रही: {exc}")
     
     with col2:
-        st.markdown("""
-        <div style="background:linear-gradient(135deg,#E3F2FD,#BBDEFB);padding:20px;border-radius:12px;
-             border:1px solid #90CAF9;text-align:center">
-            <div style="font-size:2.5em;margin-bottom:8px">📊</div>
-            <div style="font-weight:700;color:#1565C0;margin-bottom:8px">Advisory CSV</div>
-            <div style="font-size:0.82em;color:#555">Crop-wise advisory summary table</div>
-        </div>
-        """, unsafe_allow_html=True)
+        if lang == "en":
+            st.markdown("""
+            <div style="background:linear-gradient(135deg,#E3F2FD,#BBDEFB);padding:20px;border-radius:12px;
+                 border:1px solid #90CAF9;text-align:center">
+                <div style="font-size:2.5em;margin-bottom:8px">📊</div>
+                <div style="font-weight:700;color:#1565C0;margin-bottom:8px">Advisory CSV</div>
+                <div style="font-size:0.82em;color:#555">Crop-wise advisory summary table</div>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div style="background:linear-gradient(135deg,#E3F2FD,#BBDEFB);padding:20px;border-radius:12px;
+                 border:1px solid #90CAF9;text-align:center">
+                <div style="font-size:2.5em;margin-bottom:8px">📊</div>
+                <div style="font-weight:700;color:#1565C0;margin-bottom:8px">सिंचाई सलाह (Excel/CSV)</div>
+                <div style="font-size:0.82em;color:#555">फसल-वार सिंचाई सलाह और समय सारणी</div>
+            </div>
+            """, unsafe_allow_html=True)
         
         crop_summary = results.get("crop_summary", [])
         if crop_summary:
             csv_bytes = export_advisory_csv(crop_summary)
             st.download_button(
-                label="⬇️ Download CSV",
+                label="⬇️ Download CSV" if lang == "en" else "⬇️ एक्सेल/CSV फाइल डाउनलोड करें",
                 data=csv_bytes,
                 file_name=f"agrosense_advisory_{params.get('season','')}{params.get('year','')}.csv",
                 mime="text/csv",
@@ -1798,16 +2224,27 @@ def render_export_tab(results: Dict[str, Any], params: Dict[str, Any]) -> None:
             )
     
     with col3:
-        st.markdown("""
-        <div style="background:linear-gradient(135deg,#FCE4EC,#F8BBD0);padding:20px;border-radius:12px;
-             border:1px solid #F48FB1;text-align:center">
-            <div style="font-size:2.5em;margin-bottom:8px">📄</div>
-            <div style="font-weight:700;color:#880E4F;margin-bottom:8px">PDF Report</div>
-            <div style="font-size:0.82em;color:#555">Printable advisory report for farmers</div>
-        </div>
-        """, unsafe_allow_html=True)
+        if lang == "en":
+            st.markdown("""
+            <div style="background:linear-gradient(135deg,#FCE4EC,#F8BBD0);padding:20px;border-radius:12px;
+                 border:1px solid #F48FB1;text-align:center">
+                <div style="font-size:2.5em;margin-bottom:8px">📄</div>
+                <div style="font-weight:700;color:#880E4F;margin-bottom:8px">PDF Report</div>
+                <div style="font-size:0.82em;color:#555">Printable advisory report for farmers</div>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div style="background:linear-gradient(135deg,#FCE4EC,#F8BBD0);padding:20px;border-radius:12px;
+                 border:1px solid #F48FB1;text-align:center">
+                <div style="font-size:2.5em;margin-bottom:8px">📄</div>
+                <div style="font-weight:700;color:#880E4F;margin-bottom:8px">पूरी रिपोर्ट (PDF)</div>
+                <div style="font-size:0.82em;color:#555">किसानों के लिए प्रिंट करने योग्य सलाह रिपोर्ट</div>
+            </div>
+            """, unsafe_allow_html=True)
         
-        if st.button("📄 Generate PDF", use_container_width=True):
+        btn_pdf_gen = "📄 Generate PDF" if lang == "en" else "📄 रिपोर्ट PDF तैयार करें"
+        if st.button(btn_pdf_gen, use_container_width=True):
             try:
                 wris_name = params.get("wris_data", {}).get("name", "Study Area") if params.get("geo_mode") == "Select Command Area (WRIS)" else "Custom Area"
                 pdf_bytes = generate_pdf_report(
@@ -1817,29 +2254,42 @@ def render_export_tab(results: Dict[str, Any], params: Dict[str, Any]) -> None:
                     year=params.get("year", 2024),
                 )
                 st.download_button(
-                    label="💾 Save PDF",
+                    label="💾 Save PDF" if lang == "en" else "💾 रिपोर्ट PDF सेव करें",
                     data=pdf_bytes,
                     file_name=f"agrosense_report_{params.get('season','')}{params.get('year','')}.pdf",
                     mime="application/pdf",
                 )
             except Exception as exc:
-                st.error(f"PDF generation failed: {exc}")
+                st.error(f"PDF generation failed: {exc}" if lang == "en" else f"PDF रिपोर्ट बनाने में विफलता: {exc}")
     
     # Methodology note
     st.markdown("---")
-    st.markdown("""
-    <div class="info-card">
-    <strong>📐 Methodology</strong><br>
-    AgroSense AI uses <strong>Sentinel-2 SR Harmonized</strong> with SCL cloud masking,
-    <strong>Sentinel-1 GRD</strong> with Refined Lee speckle filtering, 
-    <strong>ERA5-LAND</strong> for Penman-Monteith ET₀, <strong>CHIRPS</strong> rainfall,
-    and <strong>SRTM DEM</strong> for topographic correction. 
-    Crop classification uses XGBoost + Random Forest + LightGBM stacking with 
-    Optuna hyperparameter optimization and SHAP feature selection.
-    Water balance follows <strong>FAO Irrigation and Drainage Paper 56</strong> methodology.
-    All thresholds are data-driven — no hardcoded constants.
-    </div>
-    """, unsafe_allow_html=True)
+    if lang == "en":
+        st.markdown("""
+        <div class="info-card">
+        <strong>📐 Methodology</strong><br>
+        AgroSense AI uses <strong>Sentinel-2 SR Harmonized</strong> with SCL cloud masking,
+        <strong>Sentinel-1 GRD</strong> with Refined Lee speckle filtering, 
+        <strong>ERA5-LAND</strong> for Penman-Monteith ET₀, <strong>CHIRPS</strong> rainfall,
+        and <strong>SRTM DEM</strong> for topographic correction. 
+        Crop classification uses XGBoost + Random Forest + LightGBM stacking with 
+        Optuna hyperparameter optimization and SHAP feature selection.
+        Water balance follows <strong>FAO Irrigation and Drainage Paper 56</strong> methodology.
+        All thresholds are data-driven — no hardcoded constants.
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div class="info-card">
+        <strong>📐 वैज्ञानिक पद्धति (Methodology)</strong><br>
+        एग्रोसेंस AI स्पेस से बादलों को हटाने के लिए SCL क्लाउड मास्किंग के साथ <strong>सेंटिनल-2 SR</strong>, 
+        राडार तरंगों को साफ करने के लिए रिफाइंड ली फिल्टर के साथ <strong>सेंटिनल-1 GRD</strong>, 
+        दैनिक तापमान के लिए <strong>ERA5-LAND</strong>, बारिश के लिए <strong>CHIRPS</strong> 
+        और पहाड़ी ऊंचाइयों के सुधार के लिए <strong>SRTM DEM</strong> डेटा का उपयोग करता है। 
+        फसल पहचान के लिए Optuna और SHAP फीचर सेलेक्शन के साथ XGBoost + Random Forest + LightGBM के AI स्टैकिंग मॉडल का उपयोग किया जाता है। 
+        जल संतुलन गणना <strong>FAO सिंचाई और जल निकासी पेपर 56 (FAO-56)</strong> पद्धति के अनुसार होती है।
+        </div>
+        """, unsafe_allow_html=True)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
