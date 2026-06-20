@@ -1,4 +1,4 @@
-﻿"""
+"""
 AgroSense AI — Data Ingestion Module
 Pulls Sentinel-1/2, ERA5, CHIRPS, SRTM data from Google Earth Engine.
 All fetching is dynamic — no hardcoded coordinates or dates.
@@ -151,16 +151,22 @@ def fetch_sentinel2(
             fallback_end = (p_end + timedelta(days=15)).strftime("%Y-%m-%d")
             fallback_cloud = min(cloud_pct + 20, 80)
 
-            fallback = (
+            fallback_col = (
                 ee.ImageCollection(S2_COLLECTION)
                 .filterBounds(geometry)
                 .filterDate(fallback_start, fallback_end)
                 .filter(ee.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", fallback_cloud))
                 .map(_mask_s2_clouds)
                 .select(S2_BANDS)
-                .median()
-                .clip(geometry)
             )
+            fallback_count = fallback_col.size().getInfo()
+            if fallback_count == 0:
+                raise ValueError(
+                    f"No Sentinel-2 imagery found for period {ps} to {pe} "
+                    f"even after expanding search by +/-15 days and relaxing cloud cover to {fallback_cloud}%. "
+                    f"Please try a different season, year, or a higher cloud threshold."
+                )
+            fallback = fallback_col.median().clip(geometry)
             composites.append(fallback)
         else:
             composite = collection.select(S2_BANDS).median().clip(geometry)
@@ -300,6 +306,13 @@ def fetch_sentinel1(
                 datetime.strptime(pe, "%Y-%m-%d") + timedelta(days=7)
             ).strftime("%Y-%m-%d")
             period_col = collection.filterDate(exp_start, exp_end)
+            fallback_count = period_col.size().getInfo()
+            if fallback_count == 0:
+                raise ValueError(
+                    f"No Sentinel-1 SAR imagery was found for period {ps} to {pe} "
+                    f"even after expanding search by +/-7 days. "
+                    f"Please select a different date range or season."
+                )
 
         composite = (
             period_col
