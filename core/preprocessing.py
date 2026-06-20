@@ -1,4 +1,4 @@
-﻿"""
+"""
 AgroSense AI — Preprocessing Module
 Atmospheric correction verification, speckle filtering, compositing.
 """
@@ -103,9 +103,9 @@ def scale_s2_reflectance(image: Any) -> Any:
         raise RuntimeError("GEE not available")
 
     optical_bands = ["B2", "B3", "B4", "B5", "B6", "B7", "B8", "B8A", "B11", "B12"]
-    return image.select(optical_bands).multiply(0.0001).copyProperties(
+    return ee.Image(image.select(optical_bands).multiply(0.0001).copyProperties(
         image, image.propertyNames()
-    )
+    ))
 
 
 def scale_s2_composite_list(composites: List[Any]) -> List[Any]:
@@ -188,7 +188,7 @@ def apply_topographic_correction(
 
     bands: List[str] = image.bandNames().getInfo()
     corrected_bands = [correct_band(b) for b in bands]
-    return ee.Image.cat(corrected_bands).copyProperties(image, image.propertyNames())
+    return ee.Image(ee.Image.cat(corrected_bands).copyProperties(image, image.propertyNames()))
 
 
 def compute_pixel_sample(
