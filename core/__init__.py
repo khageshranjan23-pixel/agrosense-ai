@@ -1,0 +1,2 @@
+
+# AgroSense AI core modules

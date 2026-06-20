@@ -1,0 +1,32 @@
+{
+  "pre_sowing": {
+    "weight": 0.0,
+    "description": "Pre-sowing period — crop not yet established",
+    "source": "FAO-56 Table 8"
+  },
+  "establishment": {
+    "weight": 0.4,
+    "description": "Germination and seedling establishment — moderate stress impact",
+    "source": "FAO-56 Table 8 / Doorenbos & Kassam 1979"
+  },
+  "vegetative": {
+    "weight": 0.7,
+    "description": "Active vegetative growth — significant stress impact",
+    "source": "FAO-56 Table 8 / Doorenbos & Kassam 1979"
+  },
+  "reproductive": {
+    "weight": 1.0,
+    "description": "Flowering/Reproductive stage — maximum stress sensitivity",
+    "source": "FAO-56 Table 8 / Doorenbos & Kassam 1979"
+  },
+  "grain_fill": {
+    "weight": 0.8,
+    "description": "Grain/Fruit filling — high stress impact",
+    "source": "FAO-56 Table 8 / Doorenbos & Kassam 1979"
+  },
+  "maturity": {
+    "weight": 0.3,
+    "description": "Ripening/Maturity — lower stress sensitivity",
+    "source": "FAO-56 Table 8 / Doorenbos & Kassam 1979"
+  }
+}

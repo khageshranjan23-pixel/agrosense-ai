@@ -1,0 +1,583 @@
+{
+  "wheat": {
+    "Kc_ini": 0.3, "Kc_mid": 1.15, "Kc_end": 0.4,
+    "L_ini": 20, "L_dev": 30, "L_mid": 60, "L_late": 40,
+    "p": 0.55, "Zr_min": 0.3, "Zr_max": 1.5,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.10, "Kcb_end": 0.25,
+    "season": "rabi", "aliases": ["gehun", "triticum"]
+  },
+  "rice": {
+    "Kc_ini": 1.05, "Kc_mid": 1.20, "Kc_end": 0.75,
+    "L_ini": 30, "L_dev": 30, "L_mid": 80, "L_late": 40,
+    "p": 0.20, "Zr_min": 0.2, "Zr_max": 0.5,
+    "Kcb_ini": 1.00, "Kcb_mid": 1.15, "Kcb_end": 0.70,
+    "season": "kharif", "aliases": ["paddy", "dhaan", "oryza"]
+  },
+  "cotton": {
+    "Kc_ini": 0.35, "Kc_mid": 1.15, "Kc_end": 0.70,
+    "L_ini": 30, "L_dev": 50, "L_mid": 60, "L_late": 55,
+    "p": 0.65, "Zr_min": 0.3, "Zr_max": 1.7,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.10, "Kcb_end": 0.50,
+    "season": "kharif", "aliases": ["kapas", "narma"]
+  },
+  "maize": {
+    "Kc_ini": 0.30, "Kc_mid": 1.20, "Kc_end": 0.60,
+    "L_ini": 20, "L_dev": 35, "L_mid": 40, "L_late": 30,
+    "p": 0.55, "Zr_min": 0.3, "Zr_max": 1.7,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.15, "Kcb_end": 0.50,
+    "season": "kharif", "aliases": ["corn", "makka", "bhutta"]
+  },
+  "soybean": {
+    "Kc_ini": 0.40, "Kc_mid": 1.15, "Kc_end": 0.50,
+    "L_ini": 20, "L_dev": 30, "L_mid": 60, "L_late": 25,
+    "p": 0.50, "Zr_min": 0.6, "Zr_max": 1.3,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.10, "Kcb_end": 0.30,
+    "season": "kharif", "aliases": ["soya", "bhat"]
+  },
+  "sugarcane": {
+    "Kc_ini": 0.40, "Kc_mid": 1.25, "Kc_end": 0.75,
+    "L_ini": 35, "L_dev": 60, "L_mid": 190, "L_late": 120,
+    "p": 0.65, "Zr_min": 0.3, "Zr_max": 2.0,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.20, "Kcb_end": 0.70,
+    "season": "annual", "aliases": ["ganna", "sakarkandi"]
+  },
+  "groundnut": {
+    "Kc_ini": 0.40, "Kc_mid": 1.15, "Kc_end": 0.60,
+    "L_ini": 25, "L_dev": 35, "L_mid": 45, "L_late": 25,
+    "p": 0.50, "Zr_min": 0.5, "Zr_max": 1.0,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.10, "Kcb_end": 0.50,
+    "season": "kharif", "aliases": ["peanut", "moongfali", "arachis"]
+  },
+  "mustard": {
+    "Kc_ini": 0.35, "Kc_mid": 1.05, "Kc_end": 0.40,
+    "L_ini": 15, "L_dev": 25, "L_mid": 35, "L_late": 15,
+    "p": 0.60, "Zr_min": 0.3, "Zr_max": 1.5,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.00, "Kcb_end": 0.25,
+    "season": "rabi", "aliases": ["rapeseed", "sarson", "brassica"]
+  },
+  "sunflower": {
+    "Kc_ini": 0.35, "Kc_mid": 1.10, "Kc_end": 0.35,
+    "L_ini": 25, "L_dev": 35, "L_mid": 45, "L_late": 25,
+    "p": 0.45, "Zr_min": 0.8, "Zr_max": 1.5,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.05, "Kcb_end": 0.25,
+    "season": "rabi", "aliases": ["surajmukhi", "helianthus"]
+  },
+  "sorghum": {
+    "Kc_ini": 0.30, "Kc_mid": 1.00, "Kc_end": 0.55,
+    "L_ini": 20, "L_dev": 30, "L_mid": 40, "L_late": 30,
+    "p": 0.55, "Zr_min": 1.0, "Zr_max": 2.0,
+    "Kcb_ini": 0.15, "Kcb_mid": 0.95, "Kcb_end": 0.35,
+    "season": "kharif", "aliases": ["jowar", "sorghum bicolor"]
+  },
+  "pearl_millet": {
+    "Kc_ini": 0.30, "Kc_mid": 1.00, "Kc_end": 0.55,
+    "L_ini": 15, "L_dev": 25, "L_mid": 40, "L_late": 25,
+    "p": 0.55, "Zr_min": 1.0, "Zr_max": 2.0,
+    "Kcb_ini": 0.15, "Kcb_mid": 0.95, "Kcb_end": 0.30,
+    "season": "kharif", "aliases": ["bajra", "pennisetum"]
+  },
+  "chickpea": {
+    "Kc_ini": 0.40, "Kc_mid": 1.00, "Kc_end": 0.35,
+    "L_ini": 20, "L_dev": 30, "L_mid": 35, "L_late": 20,
+    "p": 0.50, "Zr_min": 0.6, "Zr_max": 1.0,
+    "Kcb_ini": 0.15, "Kcb_mid": 0.95, "Kcb_end": 0.25,
+    "season": "rabi", "aliases": ["gram", "chana", "cicer"]
+  },
+  "lentil": {
+    "Kc_ini": 0.40, "Kc_mid": 1.05, "Kc_end": 0.30,
+    "L_ini": 20, "L_dev": 30, "L_mid": 60, "L_late": 40,
+    "p": 0.50, "Zr_min": 0.6, "Zr_max": 1.0,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.00, "Kcb_end": 0.20,
+    "season": "rabi", "aliases": ["masoor", "lens culinaris"]
+  },
+  "pigeonpea": {
+    "Kc_ini": 0.40, "Kc_mid": 1.05, "Kc_end": 0.30,
+    "L_ini": 20, "L_dev": 30, "L_mid": 100, "L_late": 30,
+    "p": 0.50, "Zr_min": 1.0, "Zr_max": 2.0,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.00, "Kcb_end": 0.20,
+    "season": "kharif", "aliases": ["tur", "arhar", "cajanus"]
+  },
+  "mungbean": {
+    "Kc_ini": 0.40, "Kc_mid": 1.05, "Kc_end": 0.60,
+    "L_ini": 15, "L_dev": 25, "L_mid": 30, "L_late": 20,
+    "p": 0.45, "Zr_min": 0.5, "Zr_max": 0.7,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.00, "Kcb_end": 0.45,
+    "season": "kharif", "aliases": ["green gram", "moong", "vigna radiata"]
+  },
+  "blackgram": {
+    "Kc_ini": 0.40, "Kc_mid": 1.05, "Kc_end": 0.55,
+    "L_ini": 15, "L_dev": 25, "L_mid": 30, "L_late": 20,
+    "p": 0.45, "Zr_min": 0.5, "Zr_max": 0.7,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.00, "Kcb_end": 0.40,
+    "season": "kharif", "aliases": ["urad", "black lentil", "vigna mungo"]
+  },
+  "potato": {
+    "Kc_ini": 0.50, "Kc_mid": 1.15, "Kc_end": 0.75,
+    "L_ini": 25, "L_dev": 30, "L_mid": 30, "L_late": 30,
+    "p": 0.35, "Zr_min": 0.4, "Zr_max": 0.6,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.10, "Kcb_end": 0.65,
+    "season": "rabi", "aliases": ["aloo", "solanum tuberosum"]
+  },
+  "tomato": {
+    "Kc_ini": 0.60, "Kc_mid": 1.15, "Kc_end": 0.80,
+    "L_ini": 30, "L_dev": 40, "L_mid": 40, "L_late": 25,
+    "p": 0.40, "Zr_min": 0.7, "Zr_max": 1.5,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.10, "Kcb_end": 0.70,
+    "season": "annual", "aliases": ["tamatar", "lycopersicon"]
+  },
+  "onion": {
+    "Kc_ini": 0.50, "Kc_mid": 1.05, "Kc_end": 0.75,
+    "L_ini": 15, "L_dev": 25, "L_mid": 70, "L_late": 40,
+    "p": 0.30, "Zr_min": 0.3, "Zr_max": 0.5,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.00, "Kcb_end": 0.65,
+    "season": "rabi", "aliases": ["pyaz", "allium cepa"]
+  },
+  "garlic": {
+    "Kc_ini": 0.70, "Kc_mid": 1.00, "Kc_end": 0.70,
+    "L_ini": 15, "L_dev": 30, "L_mid": 40, "L_late": 20,
+    "p": 0.30, "Zr_min": 0.3, "Zr_max": 0.5,
+    "Kcb_ini": 0.15, "Kcb_mid": 0.95, "Kcb_end": 0.60,
+    "season": "rabi", "aliases": ["lassan", "allium sativum"]
+  },
+  "barley": {
+    "Kc_ini": 0.30, "Kc_mid": 1.15, "Kc_end": 0.25,
+    "L_ini": 15, "L_dev": 25, "L_mid": 40, "L_late": 20,
+    "p": 0.55, "Zr_min": 1.0, "Zr_max": 1.5,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.10, "Kcb_end": 0.15,
+    "season": "rabi", "aliases": ["jau", "hordeum vulgare"]
+  },
+  "oat": {
+    "Kc_ini": 0.30, "Kc_mid": 1.15, "Kc_end": 0.25,
+    "L_ini": 15, "L_dev": 25, "L_mid": 40, "L_late": 25,
+    "p": 0.55, "Zr_min": 1.0, "Zr_max": 1.5,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.10, "Kcb_end": 0.15,
+    "season": "rabi", "aliases": ["jai", "avena sativa"]
+  },
+  "sesame": {
+    "Kc_ini": 0.35, "Kc_mid": 1.10, "Kc_end": 0.40,
+    "L_ini": 20, "L_dev": 30, "L_mid": 40, "L_late": 20,
+    "p": 0.60, "Zr_min": 1.0, "Zr_max": 1.5,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.05, "Kcb_end": 0.25,
+    "season": "kharif", "aliases": ["til", "gingelly", "sesamum"]
+  },
+  "castor": {
+    "Kc_ini": 0.35, "Kc_mid": 1.15, "Kc_end": 0.55,
+    "L_ini": 25, "L_dev": 40, "L_mid": 65, "L_late": 50,
+    "p": 0.50, "Zr_min": 0.9, "Zr_max": 2.0,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.10, "Kcb_end": 0.45,
+    "season": "kharif", "aliases": ["arandi", "ricinus communis"]
+  },
+  "linseed": {
+    "Kc_ini": 0.35, "Kc_mid": 1.05, "Kc_end": 0.50,
+    "L_ini": 25, "L_dev": 35, "L_mid": 55, "L_late": 30,
+    "p": 0.50, "Zr_min": 1.0, "Zr_max": 1.5,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.00, "Kcb_end": 0.40,
+    "season": "rabi", "aliases": ["alsi", "flaxseed", "linum usitatissimum"]
+  },
+  "tobacco": {
+    "Kc_ini": 0.30, "Kc_mid": 1.00, "Kc_end": 0.90,
+    "L_ini": 30, "L_dev": 45, "L_mid": 45, "L_late": 25,
+    "p": 0.50, "Zr_min": 0.5, "Zr_max": 1.0,
+    "Kcb_ini": 0.15, "Kcb_mid": 0.95, "Kcb_end": 0.80,
+    "season": "rabi", "aliases": ["tambaku", "nicotiana tabacum"]
+  },
+  "jute": {
+    "Kc_ini": 0.50, "Kc_mid": 1.15, "Kc_end": 0.70,
+    "L_ini": 25, "L_dev": 30, "L_mid": 30, "L_late": 25,
+    "p": 0.50, "Zr_min": 0.5, "Zr_max": 1.5,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.10, "Kcb_end": 0.60,
+    "season": "kharif", "aliases": ["pat", "corchorus"]
+  },
+  "banana": {
+    "Kc_ini": 0.50, "Kc_mid": 1.10, "Kc_end": 1.00,
+    "L_ini": 120, "L_dev": 60, "L_mid": 180, "L_late": 5,
+    "p": 0.35, "Zr_min": 0.5, "Zr_max": 0.9,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.05, "Kcb_end": 0.90,
+    "season": "annual", "aliases": ["kela", "musa"]
+  },
+  "mango": {
+    "Kc_ini": 0.50, "Kc_mid": 1.00, "Kc_end": 0.70,
+    "L_ini": 60, "L_dev": 90, "L_mid": 120, "L_late": 95,
+    "p": 0.50, "Zr_min": 1.5, "Zr_max": 5.0,
+    "Kcb_ini": 0.45, "Kcb_mid": 0.95, "Kcb_end": 0.60,
+    "season": "annual", "aliases": ["aam", "mangifera indica"]
+  },
+  "citrus": {
+    "Kc_ini": 0.70, "Kc_mid": 0.90, "Kc_end": 0.70,
+    "L_ini": 60, "L_dev": 90, "L_mid": 120, "L_late": 95,
+    "p": 0.50, "Zr_min": 1.2, "Zr_max": 1.7,
+    "Kcb_ini": 0.65, "Kcb_mid": 0.85, "Kcb_end": 0.65,
+    "season": "annual", "aliases": ["nimbu", "santra", "citrus sinensis"]
+  },
+  "grape": {
+    "Kc_ini": 0.30, "Kc_mid": 0.85, "Kc_end": 0.45,
+    "L_ini": 30, "L_dev": 60, "L_mid": 40, "L_late": 80,
+    "p": 0.35, "Zr_min": 1.0, "Zr_max": 2.0,
+    "Kcb_ini": 0.15, "Kcb_mid": 0.80, "Kcb_end": 0.35,
+    "season": "annual", "aliases": ["angoor", "vitis vinifera"]
+  },
+  "watermelon": {
+    "Kc_ini": 0.40, "Kc_mid": 1.00, "Kc_end": 0.75,
+    "L_ini": 20, "L_dev": 30, "L_mid": 30, "L_late": 30,
+    "p": 0.40, "Zr_min": 0.8, "Zr_max": 1.5,
+    "Kcb_ini": 0.15, "Kcb_mid": 0.95, "Kcb_end": 0.65,
+    "season": "zaid", "aliases": ["tarbooz", "citrullus lanatus"]
+  },
+  "cucumber": {
+    "Kc_ini": 0.60, "Kc_mid": 1.00, "Kc_end": 0.75,
+    "L_ini": 20, "L_dev": 30, "L_mid": 40, "L_late": 15,
+    "p": 0.50, "Zr_min": 0.7, "Zr_max": 1.2,
+    "Kcb_ini": 0.15, "Kcb_mid": 0.95, "Kcb_end": 0.65,
+    "season": "annual", "aliases": ["kheera", "cucumis sativus"]
+  },
+  "cabbage": {
+    "Kc_ini": 0.70, "Kc_mid": 1.05, "Kc_end": 0.95,
+    "L_ini": 40, "L_dev": 60, "L_mid": 50, "L_late": 15,
+    "p": 0.45, "Zr_min": 0.5, "Zr_max": 0.8,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.00, "Kcb_end": 0.85,
+    "season": "rabi", "aliases": ["patta gobhi", "brassica oleracea"]
+  },
+  "cauliflower": {
+    "Kc_ini": 0.70, "Kc_mid": 1.05, "Kc_end": 0.95,
+    "L_ini": 35, "L_dev": 50, "L_mid": 40, "L_late": 15,
+    "p": 0.45, "Zr_min": 0.4, "Zr_max": 0.7,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.00, "Kcb_end": 0.85,
+    "season": "rabi", "aliases": ["phool gobhi", "brassica oleracea botrytis"]
+  },
+  "eggplant": {
+    "Kc_ini": 0.60, "Kc_mid": 1.05, "Kc_end": 0.90,
+    "L_ini": 30, "L_dev": 40, "L_mid": 40, "L_late": 20,
+    "p": 0.45, "Zr_min": 0.7, "Zr_max": 1.2,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.00, "Kcb_end": 0.80,
+    "season": "annual", "aliases": ["brinjal", "baingan", "solanum melongena"]
+  },
+  "okra": {
+    "Kc_ini": 0.40, "Kc_mid": 0.95, "Kc_end": 0.70,
+    "L_ini": 20, "L_dev": 30, "L_mid": 35, "L_late": 20,
+    "p": 0.45, "Zr_min": 0.6, "Zr_max": 1.0,
+    "Kcb_ini": 0.15, "Kcb_mid": 0.90, "Kcb_end": 0.60,
+    "season": "kharif", "aliases": ["bhindi", "lady finger", "abelmoschus esculentus"]
+  },
+  "spinach": {
+    "Kc_ini": 0.70, "Kc_mid": 1.00, "Kc_end": 0.95,
+    "L_ini": 20, "L_dev": 20, "L_mid": 15, "L_late": 5,
+    "p": 0.20, "Zr_min": 0.3, "Zr_max": 0.5,
+    "Kcb_ini": 0.15, "Kcb_mid": 0.95, "Kcb_end": 0.85,
+    "season": "rabi", "aliases": ["palak", "spinacia oleracea"]
+  },
+  "pea": {
+    "Kc_ini": 0.50, "Kc_mid": 1.15, "Kc_end": 1.10,
+    "L_ini": 15, "L_dev": 25, "L_mid": 35, "L_late": 15,
+    "p": 0.35, "Zr_min": 0.6, "Zr_max": 1.0,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.10, "Kcb_end": 1.00,
+    "season": "rabi", "aliases": ["matar", "pisum sativum"]
+  },
+  "carrot": {
+    "Kc_ini": 0.70, "Kc_mid": 1.05, "Kc_end": 0.95,
+    "L_ini": 30, "L_dev": 40, "L_mid": 60, "L_late": 20,
+    "p": 0.35, "Zr_min": 0.5, "Zr_max": 1.0,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.00, "Kcb_end": 0.85,
+    "season": "rabi", "aliases": ["gajar", "daucus carota"]
+  },
+  "radish": {
+    "Kc_ini": 0.70, "Kc_mid": 0.90, "Kc_end": 0.85,
+    "L_ini": 5, "L_dev": 10, "L_mid": 15, "L_late": 5,
+    "p": 0.30, "Zr_min": 0.2, "Zr_max": 0.4,
+    "Kcb_ini": 0.15, "Kcb_mid": 0.85, "Kcb_end": 0.75,
+    "season": "annual", "aliases": ["mooli", "raphanus sativus"]
+  },
+  "sweet_potato": {
+    "Kc_ini": 0.50, "Kc_mid": 1.15, "Kc_end": 0.65,
+    "L_ini": 20, "L_dev": 30, "L_mid": 60, "L_late": 25,
+    "p": 0.65, "Zr_min": 1.0, "Zr_max": 1.5,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.10, "Kcb_end": 0.55,
+    "season": "kharif", "aliases": ["shakarkand", "ipomoea batatas"]
+  },
+  "cassava": {
+    "Kc_ini": 0.30, "Kc_mid": 0.80, "Kc_end": 0.30,
+    "L_ini": 60, "L_dev": 90, "L_mid": 120, "L_late": 60,
+    "p": 0.60, "Zr_min": 0.5, "Zr_max": 0.8,
+    "Kcb_ini": 0.15, "Kcb_mid": 0.75, "Kcb_end": 0.20,
+    "season": "annual", "aliases": ["tapioca", "manihot esculenta"]
+  },
+  "turmeric": {
+    "Kc_ini": 0.50, "Kc_mid": 1.00, "Kc_end": 0.80,
+    "L_ini": 30, "L_dev": 60, "L_mid": 90, "L_late": 60,
+    "p": 0.45, "Zr_min": 0.5, "Zr_max": 1.0,
+    "Kcb_ini": 0.15, "Kcb_mid": 0.95, "Kcb_end": 0.70,
+    "season": "kharif", "aliases": ["haldi", "curcuma longa"]
+  },
+  "ginger": {
+    "Kc_ini": 0.50, "Kc_mid": 1.00, "Kc_end": 0.80,
+    "L_ini": 15, "L_dev": 30, "L_mid": 90, "L_late": 45,
+    "p": 0.35, "Zr_min": 0.5, "Zr_max": 1.0,
+    "Kcb_ini": 0.15, "Kcb_mid": 0.95, "Kcb_end": 0.70,
+    "season": "kharif", "aliases": ["adrak", "zingiber officinale"]
+  },
+  "chilli": {
+    "Kc_ini": 0.60, "Kc_mid": 1.05, "Kc_end": 0.90,
+    "L_ini": 30, "L_dev": 35, "L_mid": 40, "L_late": 20,
+    "p": 0.30, "Zr_min": 0.5, "Zr_max": 1.0,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.00, "Kcb_end": 0.80,
+    "season": "kharif", "aliases": ["mirchi", "capsicum annuum"]
+  },
+  "coriander": {
+    "Kc_ini": 0.50, "Kc_mid": 0.85, "Kc_end": 0.70,
+    "L_ini": 20, "L_dev": 30, "L_mid": 30, "L_late": 10,
+    "p": 0.35, "Zr_min": 0.3, "Zr_max": 0.6,
+    "Kcb_ini": 0.15, "Kcb_mid": 0.80, "Kcb_end": 0.60,
+    "season": "rabi", "aliases": ["dhaniya", "coriandrum sativum"]
+  },
+  "fenugreek": {
+    "Kc_ini": 0.40, "Kc_mid": 0.85, "Kc_end": 0.70,
+    "L_ini": 15, "L_dev": 25, "L_mid": 30, "L_late": 10,
+    "p": 0.45, "Zr_min": 0.3, "Zr_max": 0.6,
+    "Kcb_ini": 0.15, "Kcb_mid": 0.80, "Kcb_end": 0.60,
+    "season": "rabi", "aliases": ["methi", "trigonella foenum graecum"]
+  },
+  "safflower": {
+    "Kc_ini": 0.35, "Kc_mid": 1.05, "Kc_end": 0.25,
+    "L_ini": 20, "L_dev": 35, "L_mid": 45, "L_late": 25,
+    "p": 0.60, "Zr_min": 1.0, "Zr_max": 2.0,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.00, "Kcb_end": 0.20,
+    "season": "rabi", "aliases": ["kardai", "carthamus tinctorius"]
+  },
+  "alfalfa": {
+    "Kc_ini": 0.40, "Kc_mid": 1.20, "Kc_end": 1.15,
+    "L_ini": 10, "L_dev": 30, "L_mid": 100, "L_late": 5,
+    "p": 0.55, "Zr_min": 1.0, "Zr_max": 3.0,
+    "Kcb_ini": 0.30, "Kcb_mid": 1.15, "Kcb_end": 1.10,
+    "season": "annual", "aliases": ["lucerne", "medicago sativa"]
+  },
+  "bermuda_grass": {
+    "Kc_ini": 0.65, "Kc_mid": 1.00, "Kc_end": 0.85,
+    "L_ini": 10, "L_dev": 30, "L_mid": 160, "L_late": 5,
+    "p": 0.55, "Zr_min": 0.5, "Zr_max": 1.5,
+    "Kcb_ini": 0.55, "Kcb_mid": 0.95, "Kcb_end": 0.75,
+    "season": "annual", "aliases": ["doob grass", "cynodon dactylon"]
+  },
+  "coffee": {
+    "Kc_ini": 0.90, "Kc_mid": 0.95, "Kc_end": 0.90,
+    "L_ini": 30, "L_dev": 40, "L_mid": 130, "L_late": 30,
+    "p": 0.40, "Zr_min": 0.9, "Zr_max": 1.5,
+    "Kcb_ini": 0.80, "Kcb_mid": 0.90, "Kcb_end": 0.80,
+    "season": "annual", "aliases": ["coffea arabica", "coffea canephora"]
+  },
+  "tea": {
+    "Kc_ini": 1.00, "Kc_mid": 1.15, "Kc_end": 1.00,
+    "L_ini": 30, "L_dev": 60, "L_mid": 200, "L_late": 30,
+    "p": 0.40, "Zr_min": 0.9, "Zr_max": 1.5,
+    "Kcb_ini": 0.90, "Kcb_mid": 1.10, "Kcb_end": 0.90,
+    "season": "annual", "aliases": ["chai", "camellia sinensis"]
+  },
+  "rubber": {
+    "Kc_ini": 1.00, "Kc_mid": 1.00, "Kc_end": 1.00,
+    "L_ini": 60, "L_dev": 90, "L_mid": 180, "L_late": 35,
+    "p": 0.45, "Zr_min": 1.0, "Zr_max": 3.0,
+    "Kcb_ini": 0.90, "Kcb_mid": 0.95, "Kcb_end": 0.90,
+    "season": "annual", "aliases": ["hevea brasiliensis"]
+  },
+  "coconut": {
+    "Kc_ini": 1.00, "Kc_mid": 1.00, "Kc_end": 1.00,
+    "L_ini": 60, "L_dev": 90, "L_mid": 200, "L_late": 15,
+    "p": 0.50, "Zr_min": 0.9, "Zr_max": 1.5,
+    "Kcb_ini": 0.90, "Kcb_mid": 0.95, "Kcb_end": 0.90,
+    "season": "annual", "aliases": ["nariyal", "cocos nucifera"]
+  },
+  "oil_palm": {
+    "Kc_ini": 1.00, "Kc_mid": 1.00, "Kc_end": 1.00,
+    "L_ini": 60, "L_dev": 90, "L_mid": 200, "L_late": 15,
+    "p": 0.50, "Zr_min": 0.9, "Zr_max": 1.5,
+    "Kcb_ini": 0.90, "Kcb_mid": 0.95, "Kcb_end": 0.90,
+    "season": "annual", "aliases": ["palm oil", "elaeis guineensis"]
+  },
+  "arecanut": {
+    "Kc_ini": 1.00, "Kc_mid": 1.00, "Kc_end": 1.00,
+    "L_ini": 60, "L_dev": 90, "L_mid": 200, "L_late": 15,
+    "p": 0.50, "Zr_min": 0.9, "Zr_max": 1.5,
+    "Kcb_ini": 0.90, "Kcb_mid": 0.95, "Kcb_end": 0.90,
+    "season": "annual", "aliases": ["betelnut", "supari", "areca catechu"]
+  },
+  "pepper": {
+    "Kc_ini": 1.00, "Kc_mid": 1.05, "Kc_end": 1.00,
+    "L_ini": 30, "L_dev": 60, "L_mid": 120, "L_late": 30,
+    "p": 0.40, "Zr_min": 0.5, "Zr_max": 1.5,
+    "Kcb_ini": 0.90, "Kcb_mid": 1.00, "Kcb_end": 0.90,
+    "season": "annual", "aliases": ["kali mirch", "piper nigrum"]
+  },
+  "cardamom": {
+    "Kc_ini": 1.00, "Kc_mid": 1.10, "Kc_end": 1.00,
+    "L_ini": 30, "L_dev": 60, "L_mid": 120, "L_late": 30,
+    "p": 0.35, "Zr_min": 0.5, "Zr_max": 1.0,
+    "Kcb_ini": 0.90, "Kcb_mid": 1.05, "Kcb_end": 0.90,
+    "season": "annual", "aliases": ["elaichi", "elettaria cardamomum"]
+  },
+  "vanilla": {
+    "Kc_ini": 1.00, "Kc_mid": 1.05, "Kc_end": 0.95,
+    "L_ini": 30, "L_dev": 60, "L_mid": 120, "L_late": 30,
+    "p": 0.40, "Zr_min": 0.3, "Zr_max": 0.8,
+    "Kcb_ini": 0.90, "Kcb_mid": 1.00, "Kcb_end": 0.85,
+    "season": "annual", "aliases": ["vanilla planifolia"]
+  },
+  "papaya": {
+    "Kc_ini": 0.60, "Kc_mid": 0.85, "Kc_end": 0.60,
+    "L_ini": 60, "L_dev": 90, "L_mid": 120, "L_late": 95,
+    "p": 0.40, "Zr_min": 0.5, "Zr_max": 1.0,
+    "Kcb_ini": 0.50, "Kcb_mid": 0.80, "Kcb_end": 0.50,
+    "season": "annual", "aliases": ["papita", "carica papaya"]
+  },
+  "guava": {
+    "Kc_ini": 0.50, "Kc_mid": 0.85, "Kc_end": 0.60,
+    "L_ini": 60, "L_dev": 90, "L_mid": 120, "L_late": 95,
+    "p": 0.50, "Zr_min": 1.0, "Zr_max": 2.0,
+    "Kcb_ini": 0.45, "Kcb_mid": 0.80, "Kcb_end": 0.55,
+    "season": "annual", "aliases": ["amrood", "psidium guajava"]
+  },
+  "pomegranate": {
+    "Kc_ini": 0.60, "Kc_mid": 0.90, "Kc_end": 0.70,
+    "L_ini": 30, "L_dev": 60, "L_mid": 90, "L_late": 60,
+    "p": 0.45, "Zr_min": 1.0, "Zr_max": 2.0,
+    "Kcb_ini": 0.50, "Kcb_mid": 0.85, "Kcb_end": 0.65,
+    "season": "annual", "aliases": ["anar", "punica granatum"]
+  },
+  "apple": {
+    "Kc_ini": 0.60, "Kc_mid": 1.05, "Kc_end": 0.75,
+    "L_ini": 20, "L_dev": 70, "L_mid": 90, "L_late": 30,
+    "p": 0.50, "Zr_min": 1.0, "Zr_max": 2.0,
+    "Kcb_ini": 0.55, "Kcb_mid": 1.00, "Kcb_end": 0.70,
+    "season": "annual", "aliases": ["seb", "malus domestica"]
+  },
+  "pear": {
+    "Kc_ini": 0.60, "Kc_mid": 1.05, "Kc_end": 0.75,
+    "L_ini": 20, "L_dev": 70, "L_mid": 90, "L_late": 30,
+    "p": 0.50, "Zr_min": 1.0, "Zr_max": 2.0,
+    "Kcb_ini": 0.55, "Kcb_mid": 1.00, "Kcb_end": 0.70,
+    "season": "annual", "aliases": ["nashpati", "pyrus communis"]
+  },
+  "peach": {
+    "Kc_ini": 0.55, "Kc_mid": 1.10, "Kc_end": 0.65,
+    "L_ini": 20, "L_dev": 70, "L_mid": 90, "L_late": 30,
+    "p": 0.50, "Zr_min": 1.0, "Zr_max": 2.0,
+    "Kcb_ini": 0.50, "Kcb_mid": 1.05, "Kcb_end": 0.60,
+    "season": "annual", "aliases": ["aaru", "prunus persica"]
+  },
+  "plum": {
+    "Kc_ini": 0.55, "Kc_mid": 1.10, "Kc_end": 0.65,
+    "L_ini": 20, "L_dev": 70, "L_mid": 90, "L_late": 30,
+    "p": 0.50, "Zr_min": 1.0, "Zr_max": 2.0,
+    "Kcb_ini": 0.50, "Kcb_mid": 1.05, "Kcb_end": 0.60,
+    "season": "annual", "aliases": ["aloo bukhara", "prunus domestica"]
+  },
+  "walnut": {
+    "Kc_ini": 0.50, "Kc_mid": 1.10, "Kc_end": 0.65,
+    "L_ini": 20, "L_dev": 100, "L_mid": 100, "L_late": 50,
+    "p": 0.50, "Zr_min": 1.5, "Zr_max": 3.0,
+    "Kcb_ini": 0.45, "Kcb_mid": 1.05, "Kcb_end": 0.60,
+    "season": "annual", "aliases": ["akhrot", "juglans regia"]
+  },
+  "almond": {
+    "Kc_ini": 0.50, "Kc_mid": 1.10, "Kc_end": 0.65,
+    "L_ini": 20, "L_dev": 70, "L_mid": 100, "L_late": 30,
+    "p": 0.40, "Zr_min": 1.0, "Zr_max": 2.0,
+    "Kcb_ini": 0.45, "Kcb_mid": 1.05, "Kcb_end": 0.60,
+    "season": "annual", "aliases": ["badam", "prunus dulcis"]
+  },
+  "strawberry": {
+    "Kc_ini": 0.40, "Kc_mid": 0.85, "Kc_end": 0.75,
+    "L_ini": 30, "L_dev": 30, "L_mid": 50, "L_late": 20,
+    "p": 0.20, "Zr_min": 0.2, "Zr_max": 0.3,
+    "Kcb_ini": 0.30, "Kcb_mid": 0.80, "Kcb_end": 0.70,
+    "season": "rabi", "aliases": ["fragaria ananassa"]
+  },
+  "fodder_maize": {
+    "Kc_ini": 0.30, "Kc_mid": 1.15, "Kc_end": 1.05,
+    "L_ini": 20, "L_dev": 35, "L_mid": 45, "L_late": 10,
+    "p": 0.55, "Zr_min": 0.3, "Zr_max": 1.7,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.10, "Kcb_end": 1.00,
+    "season": "kharif", "aliases": ["green maize", "silage maize"]
+  },
+  "napier_grass": {
+    "Kc_ini": 0.40, "Kc_mid": 1.10, "Kc_end": 1.05,
+    "L_ini": 30, "L_dev": 50, "L_mid": 100, "L_late": 20,
+    "p": 0.55, "Zr_min": 0.5, "Zr_max": 1.5,
+    "Kcb_ini": 0.30, "Kcb_mid": 1.05, "Kcb_end": 1.00,
+    "season": "annual", "aliases": ["elephant grass", "pennisetum purpureum"]
+  },
+  "berseem": {
+    "Kc_ini": 0.40, "Kc_mid": 1.15, "Kc_end": 1.10,
+    "L_ini": 10, "L_dev": 30, "L_mid": 100, "L_late": 5,
+    "p": 0.45, "Zr_min": 0.6, "Zr_max": 1.5,
+    "Kcb_ini": 0.30, "Kcb_mid": 1.10, "Kcb_end": 1.05,
+    "season": "rabi", "aliases": ["egyptian clover", "trifolium alexandrinum"]
+  },
+  "cowpea": {
+    "Kc_ini": 0.40, "Kc_mid": 1.10, "Kc_end": 0.50,
+    "L_ini": 20, "L_dev": 30, "L_mid": 30, "L_late": 20,
+    "p": 0.45, "Zr_min": 0.6, "Zr_max": 0.9,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.05, "Kcb_end": 0.35,
+    "season": "kharif", "aliases": ["lobia", "vigna unguiculata"]
+  },
+  "horsegram": {
+    "Kc_ini": 0.35, "Kc_mid": 0.95, "Kc_end": 0.45,
+    "L_ini": 15, "L_dev": 25, "L_mid": 35, "L_late": 25,
+    "p": 0.55, "Zr_min": 0.6, "Zr_max": 1.0,
+    "Kcb_ini": 0.15, "Kcb_mid": 0.90, "Kcb_end": 0.30,
+    "season": "kharif", "aliases": ["kulthi", "macrotyloma uniflorum"]
+  },
+  "moth_bean": {
+    "Kc_ini": 0.35, "Kc_mid": 0.95, "Kc_end": 0.45,
+    "L_ini": 15, "L_dev": 25, "L_mid": 35, "L_late": 20,
+    "p": 0.55, "Zr_min": 0.5, "Zr_max": 0.8,
+    "Kcb_ini": 0.15, "Kcb_mid": 0.90, "Kcb_end": 0.30,
+    "season": "kharif", "aliases": ["matki", "vigna aconitifolia"]
+  },
+  "cluster_bean": {
+    "Kc_ini": 0.35, "Kc_mid": 0.90, "Kc_end": 0.40,
+    "L_ini": 15, "L_dev": 20, "L_mid": 30, "L_late": 15,
+    "p": 0.55, "Zr_min": 0.5, "Zr_max": 0.9,
+    "Kcb_ini": 0.15, "Kcb_mid": 0.85, "Kcb_end": 0.25,
+    "season": "kharif", "aliases": ["guar", "cyamopsis tetragonoloba"]
+  },
+  "field_pea": {
+    "Kc_ini": 0.50, "Kc_mid": 1.15, "Kc_end": 1.10,
+    "L_ini": 20, "L_dev": 30, "L_mid": 35, "L_late": 15,
+    "p": 0.35, "Zr_min": 0.6, "Zr_max": 1.0,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.10, "Kcb_end": 1.00,
+    "season": "rabi", "aliases": ["desi pea", "pisum arvense"]
+  },
+  "senna": {
+    "Kc_ini": 0.35, "Kc_mid": 0.90, "Kc_end": 0.55,
+    "L_ini": 20, "L_dev": 30, "L_mid": 40, "L_late": 20,
+    "p": 0.50, "Zr_min": 0.5, "Zr_max": 1.0,
+    "Kcb_ini": 0.15, "Kcb_mid": 0.85, "Kcb_end": 0.45,
+    "season": "kharif", "aliases": ["cassia angustifolia"]
+  },
+  "hemp": {
+    "Kc_ini": 0.30, "Kc_mid": 1.05, "Kc_end": 0.70,
+    "L_ini": 25, "L_dev": 40, "L_mid": 45, "L_late": 25,
+    "p": 0.55, "Zr_min": 0.5, "Zr_max": 1.5,
+    "Kcb_ini": 0.15, "Kcb_mid": 1.00, "Kcb_end": 0.60,
+    "season": "kharif", "aliases": ["cannabis sativa", "industrial hemp"]
+  },
+  "neem": {
+    "Kc_ini": 0.80, "Kc_mid": 1.00, "Kc_end": 0.80,
+    "L_ini": 30, "L_dev": 60, "L_mid": 200, "L_late": 30,
+    "p": 0.60, "Zr_min": 1.5, "Zr_max": 4.0,
+    "Kcb_ini": 0.70, "Kcb_mid": 0.95, "Kcb_end": 0.70,
+    "season": "annual", "aliases": ["azadirachta indica", "margosa"]
+  },
+  "eucalyptus": {
+    "Kc_ini": 0.60, "Kc_mid": 1.10, "Kc_end": 0.95,
+    "L_ini": 30, "L_dev": 90, "L_mid": 200, "L_late": 45,
+    "p": 0.60, "Zr_min": 1.5, "Zr_max": 5.0,
+    "Kcb_ini": 0.55, "Kcb_mid": 1.05, "Kcb_end": 0.85,
+    "season": "annual", "aliases": ["safeda", "nilgiri"]
+  },
+  "poplar": {
+    "Kc_ini": 0.40, "Kc_mid": 1.10, "Kc_end": 0.75,
+    "L_ini": 20, "L_dev": 90, "L_mid": 150, "L_late": 40,
+    "p": 0.50, "Zr_min": 1.0, "Zr_max": 3.0,
+    "Kcb_ini": 0.35, "Kcb_mid": 1.05, "Kcb_end": 0.70,
+    "season": "annual", "aliases": ["populus", "safeda tree"]
+  }
+}
