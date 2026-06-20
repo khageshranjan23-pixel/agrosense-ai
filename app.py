@@ -1475,16 +1475,65 @@ def _run_analysis(params: Dict[str, Any], gee_status: Dict[str, Any]) -> None:
     
     except Exception as exc:
         logger.error("Pipeline error: %s", traceback.format_exc())
-        st.error(f"❌ Pipeline error: {exc}")
-        with st.expander("🔍 Error details"):
-            st.code(traceback.format_exc())
+        exc_str = str(exc).lower()
+        
+        # ── Smart fallback: imagery-not-found errors → use demo data ──────────
+        is_imagery_error = any(k in exc_str for k in [
+            "no sentinel-2", "no sentinel-1", "no imagery", "imagery found",
+            "no scenes", "cloud cover", "cloud threshold",
+        ])
+        
+        if is_imagery_error:
+            lang = st.session_state.get("lang", "en")
+            crops = params.get("crops", ["wheat", "rice"])
+            if not crops:
+                crops = ["wheat", "rice"]
+            
+            st.warning(
+                f"⚠️ **Live satellite imagery unavailable** for the selected date range and area.\n\n"
+                f"**Reason:** {exc}\n\n"
+                f"{'Showing high-quality demo results so you can explore the dashboard. Change the season/year in the sidebar for real data.' if lang == 'en' else 'डेमो डेटा से परिणाम दिखाए जा रहे हैं। असली डेटा के लिए मौसम या वर्ष बदलें।'}"
+            )
+            
+            # Fall back to rich demo results
+            try:
+                progress_bar.progress(0.8, text="🔄 Generating demo results...")
+                demo_results = generate_demo_results(crops)
+                demo_results["params"] = params
+                demo_results["_source"] = "demo"
+                demo_results["crop_classes"] = crops
+                demo_results["bounds"] = [[22.4, 78.9], [22.6, 79.1]]
+                demo_results["center"] = [22.5, 79.0]
+                progress_bar.progress(1.0, text="✅ Demo results ready!")
+                progress_placeholder.empty()
+                st.session_state["results"] = demo_results
+                st.rerun()
+            except Exception as demo_exc:
+                logger.error("Demo fallback also failed: %s", demo_exc)
+                st.error(f"❌ Demo fallback failed: {demo_exc}")
+        else:
+            # Non-imagery errors: show full error UI
+            st.error(f"❌ Pipeline error: {exc}")
+            with st.expander("🔍 Error details"):
+                st.code(traceback.format_exc())
 
 
 def render_results_dashboard(results: Dict[str, Any], params: Dict[str, Any]) -> None:
     """Render the full results dashboard with 6 tabs."""
     lang = st.session_state.get("lang", "en")
     crops = results.get("crop_classes", params.get("crops", ["wheat"]))
-    source_badge = translate("source_live_gee", lang)
+    
+    is_demo = results.get("_source") == "demo"
+    if is_demo:
+        source_badge = "🔬 Demo Mode" if lang == "en" else "🔬 डेमो मोड"
+        source_color = "#F57F17"
+        source_bg = "#FFF8E1"
+        source_border = "#FFD54F"
+    else:
+        source_badge = translate("source_live_gee", lang)
+        source_color = "#1B5E20"
+        source_bg = "#E8F5E9"
+        source_border = "#A5D6A7"
     
     # Top-level action bar
     col_a, col_b, col_c = st.columns([3, 1, 1])
@@ -1492,7 +1541,7 @@ def render_results_dashboard(results: Dict[str, Any], params: Dict[str, Any]) ->
         st.markdown(f"""
         <div style="display:flex;align-items:center;gap:12px;padding:8px 0">
             <span style="font-size:1.6rem;font-weight:800;color:#123E1C;font-family:'Outfit',sans-serif;">{translate('results_dashboard_title', lang)}</span>
-            <span style="background:#E8F5E9;color:#1B5E20;padding:4px 12px;border-radius:20px;font-size:0.82em;font-weight:600;border:1px solid #A5D6A7">{source_badge}</span>
+            <span style="background:{source_bg};color:{source_color};padding:4px 12px;border-radius:20px;font-size:0.82em;font-weight:600;border:1px solid {source_border}">{source_badge}</span>
         </div>
         """, unsafe_allow_html=True)
     with col_b:

@@ -124,6 +124,7 @@ def fetch_sentinel2(
     composites: List[Any] = []
     dates: List[Tuple[str, str]] = []
     scene_counts: List[int] = []
+    has_real_data = False
 
     for p_start, p_end in periods:
         ps = p_start.strftime("%Y-%m-%d")
@@ -143,36 +144,55 @@ def fetch_sentinel2(
 
         if count == 0:
             logger.warning(
-                "No Sentinel-2 scenes for period %s-%s; using +/-15-day fallback.",
+                "No Sentinel-2 scenes for period %s-%s; using +/-30-day fallback.",
                 ps,
                 pe,
             )
-            fallback_start = (p_start - timedelta(days=15)).strftime("%Y-%m-%d")
-            fallback_end = (p_end + timedelta(days=15)).strftime("%Y-%m-%d")
-            fallback_cloud = min(cloud_pct + 20, 80)
+            # First try: expand ±30 days, cloud up to 60%
+            for expand_days, max_cloud in [(30, 60), (60, 80), (90, 90)]:
+                fallback_start = (p_start - timedelta(days=expand_days)).strftime("%Y-%m-%d")
+                fallback_end   = (p_end   + timedelta(days=expand_days)).strftime("%Y-%m-%d")
+                fallback_cloud = min(cloud_pct + max_cloud, 90)
 
-            fallback_col = (
-                ee.ImageCollection(S2_COLLECTION)
-                .filterBounds(geometry)
-                .filterDate(fallback_start, fallback_end)
-                .filter(ee.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", fallback_cloud))
-                .map(_mask_s2_clouds)
-                .select(S2_BANDS)
-            )
-            fallback_count = fallback_col.size().getInfo()
-            if fallback_count == 0:
-                raise ValueError(
-                    f"No Sentinel-2 imagery found for period {ps} to {pe} "
-                    f"even after expanding search by +/-15 days and relaxing cloud cover to {fallback_cloud}%. "
-                    f"Please try a different season, year, or a higher cloud threshold."
+                fallback_col = (
+                    ee.ImageCollection(S2_COLLECTION)
+                    .filterBounds(geometry)
+                    .filterDate(fallback_start, fallback_end)
+                    .filter(ee.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", fallback_cloud))
+                    .map(_mask_s2_clouds)
+                    .select(S2_BANDS)
                 )
-            fallback = fallback_col.median().clip(geometry)
-            composites.append(fallback)
+                fallback_count = fallback_col.size().getInfo()
+                if fallback_count > 0:
+                    logger.info(
+                        "Found %d scenes with +/-%d day window and cloud<=%d%%.",
+                        fallback_count, expand_days, fallback_cloud,
+                    )
+                    fallback = fallback_col.median().clip(geometry)
+                    composites.append(fallback)
+                    has_real_data = True
+                    break
+            else:
+                # No imagery at all for this area/period — use a constant zero image
+                # so the pipeline can continue (results will show zeros for this period)
+                logger.error(
+                    "Absolutely no S2 imagery for %s/%s — inserting zero-filled composite.",
+                    ps, pe,
+                )
+                zero_img = ee.Image.constant([0] * len(S2_BANDS)).rename(S2_BANDS).clip(geometry)
+                composites.append(zero_img)
         else:
             composite = collection.select(S2_BANDS).median().clip(geometry)
             composites.append(composite)
+            has_real_data = True
 
         dates.append((ps, pe))
+
+    if not composites or not has_real_data:
+        raise ValueError(
+            "No Sentinel-2 imagery could be retrieved for any period in the selected "
+            "date range. Please choose a different season, year, or area."
+        )
 
     return {
         "composites": composites,
