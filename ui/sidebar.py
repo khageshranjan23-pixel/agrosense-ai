@@ -169,7 +169,7 @@ def render_sidebar() -> Dict[str, Any]:
     year = st.sidebar.selectbox(
         "Target Year",
         list(range(current_year - 5, current_year + 1)),
-        index=len(range(current_year - 5, current_year + 1)) - 1,
+        index=len(range(current_year - 5, current_year + 1)) - 2,  # Default to last complete year
         help="Specify the target calendar year for GEE analysis.",
     )
     
@@ -185,16 +185,26 @@ def render_sidebar() -> Dict[str, Any]:
         default_start = date(year, 6, 1)
         default_end = date(year, 11, 30)
         
+    # Cap default dates at today to prevent future date selection errors
+    today = date.today()
+    default_start = min(default_start, today)
+    default_end = min(default_end, today)
+    
     start_date_val = st.sidebar.date_input(
         "Start Date",
         value=default_start,
+        max_value=today,
         help="Start of GEE collection filter window.",
     )
     end_date_val = st.sidebar.date_input(
         "End Date",
         value=default_end,
+        max_value=today,
         help="End of GEE collection filter window.",
     )
+    
+    if start_date_val >= end_date_val:
+        st.sidebar.error("❌ Start Date must be before End Date.")
     
     # ── Section 3: Crops Config ─────────────────────────────────────────────
     st.sidebar.subheader("3️⃣ Target Crops")
