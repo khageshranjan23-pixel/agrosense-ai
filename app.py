@@ -980,7 +980,17 @@ def _run_analysis(params: Dict[str, Any], gee_status: Dict[str, Any]) -> None:
             
             geometry = ee.Geometry(geom_dict)
             area_km2 = get_area_km2(geometry)
-            scale = 100 if area_km2 >= 50 else 30  # Use 30m for small areas, 100m for larger areas
+            # Select scale dynamically to keep pixel count and download sizes reasonable
+            if area_km2 < 5:
+                scale = 30
+            elif area_km2 < 50:
+                scale = 100
+            elif area_km2 < 200:
+                scale = 250
+            elif area_km2 < 1000:
+                scale = 500
+            else:
+                scale = 1000  # For massive areas (e.g. Sirsa Canal Command at 6,700 km2)
             
             # Fetch data
             start_date = params["start_date"]
