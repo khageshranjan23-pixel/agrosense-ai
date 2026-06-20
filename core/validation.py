@@ -55,13 +55,26 @@ def validate_classification(
           - warnings: list of alert messages
     """
     oa = float(accuracy_score(y_true, y_pred))
-    kappa = float(cohen_kappa_score(y_true, y_pred))
-    report = classification_report(
-        y_true, y_pred,
-        target_names=class_names,
-        output_dict=True,
-        zero_division=0,
-    )
+    try:
+        kappa = float(cohen_kappa_score(y_true, y_pred))
+    except Exception:
+        kappa = 1.0 if oa == 1.0 else 0.0
+    try:
+        report = classification_report(
+            y_true, y_pred,
+            target_names=class_names,
+            output_dict=True,
+            zero_division=0,
+        )
+    except Exception:
+        try:
+            report = classification_report(
+                y_true, y_pred,
+                output_dict=True,
+                zero_division=0,
+            )
+        except Exception:
+            report = {}
     
     labels = class_names or sorted(set(y_true) | set(y_pred))
     cm = confusion_matrix(y_true, y_pred, labels=labels)
